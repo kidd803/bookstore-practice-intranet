@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>書店的修行（臻品齋）</title>
+    <meta name="description" content="臻品齋書店第45年，把舊書、經典與思想整理成一篇篇書店老闆的說書文章。">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="書店的修行（臻品齋）">
+    <meta property="og:description" content="整理宗教與哲學經典，為您留一盞燈。">
+    <meta property="og:image" content="https://2books.com.tw/site/assets/bookstore-practice.jpg">
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZZ6PNK10S8"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-ZZ6PNK10S8');
+    </script>
+    <link rel="canonical" href="https://2books.com.tw/">
+    <base href="/site/">
+    <link rel="stylesheet" href="styles.css?v=20260801-gcs-images1">
+  </head>
+  <body>
+    <main class="shell">
+      <section class="toolbar brand-toolbar" aria-label="文章篩選">
+        <div class="brand-card">
+          <figure class="brand-portrait">
+            <img src="assets/bookstore-practice.jpg" alt="書店的修行主視覺">
+            <figcaption>臻品齋</figcaption>
+          </figure>
+          <div class="brand-copy">
+            <p class="brand-kicker">整理宗教與哲學經典，為您留一盞燈</p>
+            <h1>書店的修行</h1>
+            <p class="brand-statement">臻品齋書店第45年，仍在舊書、經典與思想之間，每天讀書、整理，一步步為百萬本書找到位置。</p>
+            <div class="brand-tags" aria-label="品牌定位">
+              <span>老闆說書</span>
+              <span>讀懂再買</span>
+              <span>找相關書</span>
+            </div>
+            <p id="summary">等待資料匯入</p>
+          </div>
+        </div>
+        <div class="search-row">
+          <label class="search">
+            <span>搜尋</span>
+            <input id="searchInput" type="search" placeholder="輸入關鍵字、分類或日期">
+          </label>
+          <label class="select">
+            <span>排序</span>
+            <select id="sortSelect">
+              <option value="newest">新到舊</option>
+              <option value="oldest">舊到新</option>
+            </select>
+          </label>
+          <label class="select">
+            <span>年份</span>
+            <select id="yearSelect">
+              <option value="全部年份">全部年份</option>
+            </select>
+          </label>
+          <label class="select">
+            <span>系列</span>
+            <select id="seriesSelect">
+              <option value="全部系列">全部系列</option>
+            </select>
+          </label>
+          <label class="select" data-admin-only>
+            <span>發佈</span>
+            <select id="publishSelect">
+              <option value="全部狀態">全部狀態</option>
+              <option value="未發佈">未發佈</option>
+              <option value="已發佈">已發佈</option>
+            </select>
+          </label>
+        </div>
+      </section>
+
+      <section id="recommendationBand" class="recommendation-band" aria-label="今日說書"></section>
+      <section id="readingGateway" class="reading-gateway" aria-label="閱讀入口"></section>
+      <nav id="categoryBar" class="categories" aria-label="分類"></nav>
+
+      <section class="layout">
+        <aside class="stats" aria-label="統計"></aside>
+        <section class="results-panel" aria-label="文章列表">
+          <div class="result-head">
+            <div>
+              <h2 id="resultTitle">文章列表</h2>
+              <p id="resultMeta"></p>
+            </div>
+            <a id="topicPackLink" class="pack-link" href="../outputs/facebook_posts/tiktok/huang-yuanji/huang-yuanji-images.zip" download hidden>下載圖片包</a>
+          </div>
+          <section id="postList" class="post-list" aria-label="搜尋結果"></section>
+          <button id="loadMoreButton" class="load-more" type="button">顯示更多</button>
+        </section>
+        <article id="reader" class="reader" aria-label="文章內容"></article>
+      </section>
+    </main>
+
+    <a class="bookstore-ad" href="https://www.2book.tw" target="_blank" rel="noopener noreferrer" aria-label="前往臻品齋書店官網 2book.tw">
+      <img src="assets/2book-ad.webp" alt="">
+      <span>
+        <strong>臻品齋書店</strong>
+        <small>2book.tw</small>
+      </span>
+    </a>
+    <button id="topButton" class="top-button" type="button">置頂</button>
+    <button id="mobileSearchButton" class="mobile-search-button" type="button" hidden>回到搜尋</button>
+
+    <template id="postTemplate">
+      <article class="post-card">
+        <div class="post-meta">
+          <time></time>
+          <span class="category"></span>
+        </div>
+        <h2></h2>
+        <p class="excerpt"></p>
+        <ul class="tags"></ul>
+      </article>
+    </template>
+
+    <script src="data/posts.js?v=20260801-gcs-images1"></script>
+    <script src="data/video-links.js?v=20260801-gcs-images1"></script>
+    <script src="app.js?v=20260801-gcs-images1"></script>
+  </body>
+</html>

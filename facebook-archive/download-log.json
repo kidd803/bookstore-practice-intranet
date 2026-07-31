@@ -1,0 +1,50 @@
+{
+  "policy": "Facebook 匯出檔很大；下載前先檢查同日期檔案。若同一天已下載過，直接用本機檔案整合，不要重新下載。",
+  "knownExports": [
+    {
+      "date": "2026-05-25",
+      "filename": "facebook-linyuanan439163-2026-5-25-NpVuDywB.zip",
+      "sizeBytes": 1576935351,
+      "type": "zip"
+    },
+    {
+      "date": "2026-06-02",
+      "filename": "facebook-www2bookscomtw-2026-6-2-UTA01xBA.zip",
+      "sizeBytes": 1301776318,
+      "type": "zip"
+    },
+    {
+      "date": "2026-06-04",
+      "filename": "facebook-linyuanan439163-2026-6-4-6Oz1wOwb.zip",
+      "sizeBytes": 43776381,
+      "type": "zip"
+    },
+    {
+      "date": "2026-07-03",
+      "filename": "facebook-linyuanan439163-2026-7-3-x1BwGGpE.zip",
+      "sizeBytes": 101315673,
+      "type": "zip"
+    },
+    {
+      "date": "2026-07-20",
+      "filename": "your_facebook_activity",
+      "type": "extracted-folder"
+    },
+    {
+      "date": "2026-07-27",
+      "filename": "facebook-www2bookscomtw-2026-7-27-ArXKAXqw.zip",
+      "sizeBytes": 2187692361,
+      "type": "zip"
+    }
+  ],
+  "pending": [
+    {
+      "dateObserved": "2026-07-27",
+      "source": "Meta 帳號中心",
+      "profile": "林宜毅",
+      "description": "Meta 顯示可下載 JSON 匯出檔，大小約 2.04 GB，到期日 2026-07-30；已下載並整合。",
+      "downloaded": true,
+      "downloadedAt": "2026-07-27T13:55:13+08:00"
+    }
+  ]
+}
