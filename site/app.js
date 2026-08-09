@@ -11,6 +11,7 @@ const NAVAL_PRODUCT_URL = 'https://2book.tw/products/-957m-全新書-納瓦爾�
 const PUBLIC_SITE_URL = 'https://2books.com.tw/';
 const REMOTE_FACEBOOK_MEDIA_BASE_URL = 'https://storage.googleapis.com/2books-facebook-images/facebook_posts/_extracted/';
 const POST_QUERY_PARAM = 'post';
+const SERIES_QUERY_PARAM = 'series';
 const DEFAULT_DOCUMENT_TITLE = document.title;
 const RECOMMENDATION_EXCLUDED_CATEGORIES = new Set([
   'Reels',
@@ -230,6 +231,7 @@ const latestPost = posts.reduce((latest, post) => !latest || post.timestamp > la
 document.documentElement.classList.toggle('admin-mode', isAdminMode);
 document.documentElement.classList.toggle('public-mode', !isAdminMode);
 clearUnknownPostUrl();
+applyInitialSeriesFromLocation();
 
 populateYears();
 populateSeries();
@@ -243,7 +245,7 @@ searchInput.addEventListener('input', () => {
   state.publishFilter = '全部狀態';
   state.visible = PAGE_SIZE;
   state.selectedId = null;
-  clearPostUrl();
+  clearShareUrl();
   render();
 });
 
@@ -265,7 +267,7 @@ yearSelect.addEventListener('change', () => {
   searchInput.value = '';
   state.visible = PAGE_SIZE;
   state.selectedId = null;
-  clearPostUrl();
+  clearShareUrl();
   render();
 });
 
@@ -275,7 +277,7 @@ seriesSelect.addEventListener('change', () => {
   state.lane = null;
   state.visible = PAGE_SIZE;
   state.selectedId = null;
-  clearPostUrl();
+  setSeriesUrl(state.series);
   render();
 });
 
@@ -308,6 +310,10 @@ if (shouldScrollToInitialPost) {
 
 window.addEventListener('popstate', () => {
   state.selectedId = initialPostId();
+  if (!state.selectedId) {
+    state.series = '全部系列';
+    applyInitialSeriesFromLocation();
+  }
   state.recommendationOpenId = null;
   render({ preserveScroll: true });
 });
@@ -476,7 +482,7 @@ function renderReadingGateway() {
       state.visible = PAGE_SIZE;
       state.selectedId = null;
       searchInput.value = '';
-      clearPostUrl();
+      clearShareUrl();
       render();
       scrollToResults();
     });
@@ -537,7 +543,7 @@ function categoryGrid(categories) {
       state.lane = null;
       state.visible = PAGE_SIZE;
       state.selectedId = null;
-      clearPostUrl();
+      clearShareUrl();
       render();
       scrollToResults();
     });
@@ -597,7 +603,7 @@ function seriesNav() {
       state.category = '全部';
       state.visible = PAGE_SIZE;
       state.selectedId = null;
-      clearPostUrl();
+      setSeriesUrl(state.series);
       render();
       scrollToResults();
     });
@@ -1544,6 +1550,30 @@ function postIdFromLocation() {
   }
 }
 
+function initialSeriesFromLocation() {
+  try {
+    const series = new URLSearchParams(window.location.search).get(SERIES_QUERY_PARAM) || '';
+    return seriesCounts.has(series) ? series : '';
+  } catch {
+    return '';
+  }
+}
+
+function applyInitialSeriesFromLocation() {
+  const requestedSeries = initialSeriesFromLocation();
+  if (state.selectedId || !requestedSeries) {
+    clearUnknownSeriesUrl();
+    return;
+  }
+  state.series = requestedSeries;
+  state.category = '全部';
+  state.query = '';
+  state.year = '全部年份';
+  state.lane = null;
+  state.publishFilter = '全部狀態';
+  searchInput.value = '';
+}
+
 function selectPost(id) {
   if (state.selectedId === id) {
     setPostUrl(id);
@@ -1562,9 +1592,25 @@ function setPostUrl(id) {
     const nextUrl = new URL(window.location.href);
     if (nextUrl.searchParams.get(POST_QUERY_PARAM) === id) return;
     nextUrl.searchParams.set(POST_QUERY_PARAM, id);
+    nextUrl.searchParams.delete(SERIES_QUERY_PARAM);
     window.history.pushState({ postId: id }, '', `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`);
   } catch {
     // The article can still be read even when history updates are blocked.
+  }
+}
+
+function setSeriesUrl(series) {
+  try {
+    const nextUrl = new URL(window.location.href);
+    nextUrl.searchParams.delete(POST_QUERY_PARAM);
+    if (series === '全部系列') {
+      nextUrl.searchParams.delete(SERIES_QUERY_PARAM);
+    } else {
+      nextUrl.searchParams.set(SERIES_QUERY_PARAM, series);
+    }
+    window.history.pushState({ series }, '', `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`);
+  } catch {
+    // Filtering still works even when history updates are blocked.
   }
 }
 
@@ -1573,6 +1619,31 @@ function clearPostUrl() {
     const nextUrl = new URL(window.location.href);
     if (!nextUrl.searchParams.has(POST_QUERY_PARAM)) return;
     nextUrl.searchParams.delete(POST_QUERY_PARAM);
+    window.history.replaceState({}, '', `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`);
+  } catch {
+    // Leaving the old URL visible is harmless if history updates are blocked.
+  }
+}
+
+function clearShareUrl() {
+  try {
+    const nextUrl = new URL(window.location.href);
+    const changed = nextUrl.searchParams.has(POST_QUERY_PARAM) || nextUrl.searchParams.has(SERIES_QUERY_PARAM);
+    if (!changed) return;
+    nextUrl.searchParams.delete(POST_QUERY_PARAM);
+    nextUrl.searchParams.delete(SERIES_QUERY_PARAM);
+    window.history.replaceState({}, '', `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`);
+  } catch {
+    // Leaving the old URL visible is harmless if history updates are blocked.
+  }
+}
+
+function clearUnknownSeriesUrl() {
+  try {
+    const nextUrl = new URL(window.location.href);
+    const series = nextUrl.searchParams.get(SERIES_QUERY_PARAM) || '';
+    if (!series || seriesCounts.has(series)) return;
+    nextUrl.searchParams.delete(SERIES_QUERY_PARAM);
     window.history.replaceState({}, '', `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`);
   } catch {
     // Leaving the old URL visible is harmless if history updates are blocked.
@@ -1626,7 +1697,7 @@ function goHome() {
   state.lane = null;
   searchInput.value = '';
   sortSelect.value = state.sort;
-  clearPostUrl();
+  clearShareUrl();
   resetReaderAlignment();
   render({ skipReaderAlign: true });
   requestAnimationFrame(() => scrollToTop('auto'));
