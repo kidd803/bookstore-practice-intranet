@@ -13,6 +13,42 @@ const REMOTE_FACEBOOK_MEDIA_BASE_URL = 'https://storage.googleapis.com/2books-fa
 const POST_QUERY_PARAM = 'post';
 const SERIES_QUERY_PARAM = 'series';
 const DEFAULT_DOCUMENT_TITLE = document.title;
+const SERIES_SLUGS = new Map([
+  [BOOK_VIDEO_SERIES, 'book-shorts'],
+  [NAVAL_SERIES, 'navalmanack'],
+  ['八二三注', '823-notes'],
+  ['文藝復興', 'renaissance'],
+  ['卡繆', 'camus'],
+  ['尼采', 'nietzsche'],
+  ['全真教法統', 'quanzhen-lineage'],
+  ['全真道歷史', 'quanzhen-history'],
+  ['托爾斯泰', 'tolstoy'],
+  ['李白', 'li-bai'],
+  ['村上春樹', 'murakami'],
+  ['叔本華', 'schopenhauer'],
+  ['明毅請益錄：紫微 400 問', 'ziwei-400'],
+  ['長春真人西遊記', 'changchun-journey'],
+  ['柏拉圖', 'plato'],
+  ['重陽立教十五論', 'chongyang-fifteen'],
+  ['書店老闆讀史哲', 'history-philosophy'],
+  ['書店老闆觀察ＡＩ', 'ai-observations'],
+  ['海明威', 'hemingway'],
+  ['理書日記', 'book-sorting'],
+  ['莊子', 'zhuangzi'],
+  ['莎士比亞', 'shakespeare'],
+  ['鹿邑之旅', 'luyi-trip'],
+  ['傅佩榮西方哲學史', 'fu-peirong-western-philosophy'],
+  ['復旦大學歷史系', 'fudan-history'],
+  ['圓安易學', 'yuanan-yijing'],
+  ['聖殿騎士團', 'templars'],
+  ['聖濟總錄', 'shengji-zonglu'],
+  ['道士在書中找到黃金屋', 'golden-house'],
+  ['道德經', 'daodejing'],
+  ['諾貝爾文學奬', 'nobel-literature'],
+  ['龍門心法', 'longmen-xinfa'],
+  ['蘇格拉底', 'socrates']
+]);
+const SERIES_BY_SLUG = new Map([...SERIES_SLUGS].map(([series, slug]) => [slug, series]));
 const RECOMMENDATION_EXCLUDED_CATEGORIES = new Set([
   'Reels',
   '生活隨筆與其他',
@@ -1552,7 +1588,8 @@ function postIdFromLocation() {
 
 function initialSeriesFromLocation() {
   try {
-    const series = new URLSearchParams(window.location.search).get(SERIES_QUERY_PARAM) || '';
+    const value = new URLSearchParams(window.location.search).get(SERIES_QUERY_PARAM) || '';
+    const series = seriesFromUrlValue(value);
     return seriesCounts.has(series) ? series : '';
   } catch {
     return '';
@@ -1606,7 +1643,7 @@ function setSeriesUrl(series) {
     if (series === '全部系列') {
       nextUrl.searchParams.delete(SERIES_QUERY_PARAM);
     } else {
-      nextUrl.searchParams.set(SERIES_QUERY_PARAM, series);
+      nextUrl.searchParams.set(SERIES_QUERY_PARAM, seriesUrlValue(series));
     }
     window.history.pushState({ series }, '', `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`);
   } catch {
@@ -1641,13 +1678,24 @@ function clearShareUrl() {
 function clearUnknownSeriesUrl() {
   try {
     const nextUrl = new URL(window.location.href);
-    const series = nextUrl.searchParams.get(SERIES_QUERY_PARAM) || '';
-    if (!series || seriesCounts.has(series)) return;
+    const value = nextUrl.searchParams.get(SERIES_QUERY_PARAM) || '';
+    const series = seriesFromUrlValue(value);
+    if (!value || seriesCounts.has(series)) return;
     nextUrl.searchParams.delete(SERIES_QUERY_PARAM);
     window.history.replaceState({}, '', `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`);
   } catch {
     // Leaving the old URL visible is harmless if history updates are blocked.
   }
+}
+
+function seriesFromUrlValue(value) {
+  if (!value) return '';
+  if (seriesCounts.has(value)) return value;
+  return SERIES_BY_SLUG.get(value) || '';
+}
+
+function seriesUrlValue(series) {
+  return SERIES_SLUGS.get(series) || series;
 }
 
 function clearUnknownPostUrl() {
