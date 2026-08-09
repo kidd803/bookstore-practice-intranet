@@ -293,10 +293,10 @@ const KNOWN_SERIES = [
     anyKeywords: ['書店老闆讀史哲']
   },
   {
-    name: '書店老闆讀聖濟總錄',
+    name: '聖濟總錄',
     total: null,
     unit: '篇',
-    anyKeywords: ['書店老闆讀聖濟總錄', '書店老闆讀聖濟總錄', '聖濟總錄']
+    anyKeywords: ['聖濟總錄', '書店老闆讀《聖濟總錄》']
   },
   {
     name: '理書日記',
