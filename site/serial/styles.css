@@ -432,6 +432,11 @@ a:focus-visible {
   text-indent: 0;
 }
 
+.chapter-prose strong {
+  color: var(--serial-red);
+  font-weight: 900;
+}
+
 .chapter-end {
   display: grid;
   place-items: center;
