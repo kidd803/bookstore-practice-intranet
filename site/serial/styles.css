@@ -1,14 +1,14 @@
 :root {
   color-scheme: light;
-  --serial-ink: #202521;
-  --serial-muted: #657068;
-  --serial-paper: #f2efe7;
-  --serial-panel: #fffdf7;
-  --serial-green: #173f35;
-  --serial-gold: #aa7c2c;
-  --serial-red: #93473c;
-  --serial-line: #d8d0bf;
-  --serial-shadow: 0 18px 48px rgba(35, 40, 34, 0.12);
+  --serial-ink: #2f2822;
+  --serial-muted: #746960;
+  --serial-paper: #f3eee6;
+  --serial-panel: #fffdf9;
+  --serial-green: #49382e;
+  --serial-gold: #a66b45;
+  --serial-red: #8f4d37;
+  --serial-line: #d9cbbb;
+  --serial-shadow: 0 18px 48px rgba(77, 57, 39, 0.12);
 }
 
 * {
@@ -35,7 +35,7 @@ a {
 }
 
 a:focus-visible {
-  outline: 3px solid rgba(170, 124, 44, 0.36);
+  outline: 3px solid rgba(143, 77, 55, 0.28);
   outline-offset: 3px;
 }
 
@@ -62,7 +62,7 @@ a:focus-visible {
   align-items: center;
   min-height: 38px;
   padding: 6px 12px;
-  border: 1px solid rgba(23, 63, 53, 0.24);
+  border: 1px solid rgba(73, 56, 46, 0.24);
   border-radius: 8px;
   background: rgba(255, 253, 247, 0.82);
   text-decoration: none;
@@ -77,38 +77,38 @@ a:focus-visible {
   position: relative;
   isolation: isolate;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 230px;
+  grid-template-columns: minmax(0, 1fr) 190px;
   gap: 36px;
   align-items: center;
-  min-height: 430px;
-  padding: clamp(34px, 7vw, 76px);
+  min-height: 390px;
+  padding: clamp(34px, 6vw, 66px);
   overflow: hidden;
-  border: 1px solid #796441;
+  border: 1px solid #d4c2aa;
+  border-top: 6px solid var(--serial-red);
   border-radius: 12px;
   background:
-    radial-gradient(circle at 82% 18%, rgba(205, 159, 74, 0.23), transparent 31%),
-    linear-gradient(120deg, #111a16 0%, #173f35 58%, #3a2b1d 100%);
-  color: #fffdf7;
+    radial-gradient(circle at 86% 15%, rgba(143, 77, 55, 0.11), transparent 30%),
+    linear-gradient(135deg, #fffaf1 0%, #f3e9dc 58%, #e8d8c2 100%);
+  color: var(--serial-ink);
   box-shadow: var(--serial-shadow);
 }
 
 .series-hero::after {
   position: absolute;
-  right: -0.05em;
-  bottom: -0.32em;
+  right: -90px;
+  top: -110px;
   z-index: -1;
-  color: rgba(255, 249, 227, 0.045);
-  content: "線";
-  font-family: "Noto Serif TC", "Songti TC", PMingLiU, serif;
-  font-size: clamp(22rem, 42vw, 36rem);
-  font-weight: 900;
-  line-height: 1;
+  width: 340px;
+  height: 340px;
+  border: 1px solid rgba(143, 77, 55, 0.13);
+  border-radius: 50%;
+  content: "";
 }
 
 .series-status,
 .chapter-eyebrow {
   margin: 0 0 14px;
-  color: #e7cc91;
+  color: var(--serial-red);
   font-size: 0.86rem;
   font-weight: 850;
   letter-spacing: 0.18em;
@@ -121,6 +121,7 @@ a:focus-visible {
   font-weight: 900;
   letter-spacing: 0.025em;
   line-height: 1.18;
+  color: var(--serial-ink);
 }
 
 .series-hero h1 {
@@ -129,7 +130,7 @@ a:focus-visible {
 
 .series-subtitle {
   margin: 7px 0 0;
-  color: #d9b86f;
+  color: var(--serial-red);
   font-family: "Noto Serif TC", "Songti TC", PMingLiU, serif;
   font-size: clamp(1.55rem, 3vw, 2.7rem);
   font-weight: 850;
@@ -139,7 +140,7 @@ a:focus-visible {
 .series-deck {
   max-width: 42rem;
   margin: 20px 0 0;
-  color: #dce4df;
+  color: var(--serial-muted);
   font-size: 1.08rem;
   line-height: 1.9;
 }
@@ -148,26 +149,24 @@ a:focus-visible {
   display: grid;
   place-items: center;
   align-content: center;
-  width: 210px;
-  min-height: 270px;
+  width: 180px;
+  min-height: 230px;
   justify-self: end;
-  border: 1px solid rgba(230, 204, 145, 0.38);
-  border-radius: 50% 50% 12px 12px;
-  background: rgba(8, 15, 12, 0.42);
-  box-shadow: inset 0 0 60px rgba(217, 184, 111, 0.08);
+  border-left: 1px solid #cbb79b;
+  background: rgba(255, 251, 244, 0.46);
   text-align: center;
 }
 
 .series-hero-mark span,
 .series-hero-mark small {
-  color: #d8c698;
+  color: var(--serial-red);
   font-size: 0.82rem;
   font-weight: 800;
   letter-spacing: 0.12em;
 }
 
 .series-hero-mark strong {
-  color: #fff1cf;
+  color: var(--serial-red);
   font-family: Georgia, serif;
   font-size: 6rem;
   font-weight: 500;
@@ -244,7 +243,7 @@ a:focus-visible {
 }
 
 .serial-button:hover {
-  background: #235b4c;
+  background: #6f3c2c;
 }
 
 .serial-button.secondary {
@@ -280,12 +279,13 @@ a:focus-visible {
 
 .chapter-hero {
   padding: clamp(34px, 7vw, 74px);
-  border: 1px solid #796441;
+  border: 1px solid #d4c2aa;
+  border-top: 6px solid var(--serial-red);
   border-radius: 12px;
   background:
-    linear-gradient(120deg, rgba(16, 26, 21, 0.98), rgba(23, 63, 53, 0.95)),
-    var(--serial-green);
-  color: #fffdf7;
+    radial-gradient(circle at 88% 10%, rgba(143, 77, 55, 0.1), transparent 28%),
+    linear-gradient(135deg, #fffaf1 0%, #f0e4d5 100%);
+  color: var(--serial-ink);
   box-shadow: var(--serial-shadow);
 }
 
@@ -296,7 +296,7 @@ a:focus-visible {
 
 .chapter-hero h2 {
   margin: 12px 0 0;
-  color: #e4c77f;
+  color: var(--serial-red);
   font-family: "Noto Serif TC", "Songti TC", PMingLiU, serif;
   font-size: clamp(1.25rem, 2.8vw, 2rem);
   font-weight: 800;
@@ -308,7 +308,7 @@ a:focus-visible {
   gap: 8px 14px;
   margin: 22px 0 0;
   padding: 0;
-  color: #cad7d0;
+  color: var(--serial-muted);
   font-size: 0.9rem;
   list-style: none;
 }
