@@ -5,6 +5,7 @@
 ## 內容
 
 - `site/`：可直接瀏覽的靜態網站
+- `site/serial/unbroken-line/`：《一條沒有斷掉的線》（〈道炁重生〉）長篇小說連載
 - `site/data/posts.js`：網站讀取的文章資料
 - `outputs/facebook_posts/posts.json`：整理後文章資料
 - `outputs/facebook_posts/_extracted/`：文章圖片附件
