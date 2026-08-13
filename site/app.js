@@ -1047,7 +1047,8 @@ function startFeaturedCarousel() {
 }
 
 function renderHourlyRecommendation(selectedId, placement = 'before') {
-  const post = hourlyRecommendedPost(selectedId);
+  const openPost = state.recommendationOpenId ? postsById.get(state.recommendationOpenId) : null;
+  const post = openPost || hourlyRecommendedPost(selectedId);
   const section = document.createElement('section');
   section.className = 'hourly-recommendation';
   section.classList.add(`hourly-recommendation-${placement}`);
