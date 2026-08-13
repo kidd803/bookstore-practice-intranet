@@ -110,6 +110,7 @@ body {
 }
 
 .brand-tags span,
+.brand-about-link,
 .brand-follow-link {
   display: inline-flex;
   align-items: center;
@@ -121,6 +122,15 @@ body {
   color: #5d4721;
   font-size: 0.9rem;
   font-weight: 750;
+}
+
+.brand-about-link {
+  justify-content: center;
+  border-color: #c2d9ce;
+  background: #eff8f2;
+  color: var(--green);
+  font-weight: 800;
+  text-decoration: none;
 }
 
 .brand-tags span:nth-child(2) {
@@ -147,6 +157,155 @@ body {
 .brand-follow-link:hover {
   border-color: var(--blue);
   background: #e4eef8;
+}
+
+.brand-about-link:hover {
+  border-color: var(--green);
+  background: #e2f1e9;
+}
+
+.about-body {
+  background:
+    linear-gradient(180deg, rgba(255, 253, 248, 0.9), rgba(246, 247, 243, 0.96)),
+    var(--paper);
+}
+
+.about-shell {
+  width: min(960px, calc(100vw - 32px));
+  margin: 0 auto;
+  padding: 28px 0 72px;
+}
+
+.about-nav {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.about-nav a,
+.about-actions a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  padding: 7px 12px;
+  border: 1px solid rgba(40, 107, 89, 0.28);
+  border-radius: 8px;
+  background: #fffdf8;
+  color: var(--green);
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.about-nav a:hover,
+.about-actions a:hover {
+  border-color: var(--green);
+  background: #eef7f1;
+}
+
+.about-hero {
+  display: grid;
+  grid-template-columns: 180px minmax(0, 1fr);
+  gap: 28px;
+  align-items: center;
+  padding: 28px;
+  border: 1px solid var(--line);
+  border-top: 6px solid #144d3f;
+  border-radius: 8px;
+  background: #fffdf8;
+  box-shadow: var(--shadow);
+}
+
+.about-portrait {
+  position: relative;
+  width: 180px;
+  aspect-ratio: 1;
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid #c9d2c8;
+  border-radius: 8px;
+  background: #efe6d3;
+  box-shadow: 0 12px 26px rgba(52, 47, 41, 0.13);
+}
+
+.about-portrait img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.about-portrait figcaption {
+  position: absolute;
+  right: 9px;
+  bottom: 9px;
+  padding: 5px 9px;
+  border-radius: 7px;
+  background: rgba(155, 74, 60, 0.94);
+  color: #fff;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.about-kicker {
+  margin: 0 0 6px;
+  color: var(--gold);
+  font-weight: 850;
+}
+
+.about-subtitle {
+  max-width: 34rem;
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 1.05rem;
+}
+
+.about-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.about-article {
+  margin-top: 22px;
+  padding: 34px min(7vw, 70px);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+}
+
+.about-section + .about-section {
+  margin-top: 36px;
+  padding-top: 30px;
+  border-top: 1px solid var(--line);
+}
+
+.about-section h2 {
+  margin: 0 0 14px;
+  color: #173f35;
+  font-size: clamp(1.25rem, 2vw, 1.65rem);
+  line-height: 1.35;
+}
+
+.about-section p {
+  margin: 0 0 1.05em;
+  color: #303438;
+  font-size: 1.05rem;
+  line-height: 1.95;
+}
+
+.about-section p:last-child {
+  margin-bottom: 0;
+}
+
+.about-lead {
+  color: #173f35 !important;
+  font-size: 1.28rem !important;
+  font-weight: 850;
 }
 
 h1 {
@@ -217,7 +376,10 @@ button:focus,
 .book-video-carousel-actions button:focus,
 .book-video-thumb:focus,
 .bookstore-ad:focus,
+.brand-about-link:focus,
 .brand-follow-link:focus,
+.about-nav a:focus,
+.about-actions a:focus,
 .top-button:focus {
   outline: 3px solid rgba(49, 95, 141, 0.24);
   outline-offset: 1px;
@@ -1854,6 +2016,7 @@ h2 {
   }
 
   .brand-tags span,
+  .brand-about-link,
   .brand-follow-link {
     min-height: 26px;
     padding: 3px 8px;
@@ -1873,6 +2036,62 @@ h2 {
 
   html:not(.admin-mode) .search-row {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .about-shell {
+    width: min(960px, calc(100vw - 24px));
+    padding: 18px 0 54px;
+  }
+
+  .about-hero {
+    grid-template-columns: 94px minmax(0, 1fr);
+    gap: 14px;
+    align-items: start;
+    padding: 14px;
+  }
+
+  .about-portrait {
+    width: 94px;
+  }
+
+  .about-portrait figcaption {
+    right: 6px;
+    bottom: 6px;
+    padding: 3px 6px;
+    font-size: 0.68rem;
+  }
+
+  .about-subtitle {
+    font-size: 0.92rem;
+  }
+
+  .about-actions {
+    margin-top: 12px;
+  }
+
+  .about-actions a,
+  .about-nav a {
+    min-height: 34px;
+    padding: 5px 10px;
+    font-size: 0.86rem;
+  }
+
+  .about-article {
+    padding: 22px 18px;
+  }
+
+  .about-section + .about-section {
+    margin-top: 28px;
+    padding-top: 24px;
+  }
+
+  .about-section p {
+    font-size: 0.98rem;
+    line-height: 1.85;
+  }
+
+  .about-lead {
+    font-size: 1.12rem !important;
   }
 
   .search-row .search,
@@ -2166,6 +2385,7 @@ h2 {
   }
 
   .brand-tags span,
+  .brand-about-link,
   .brand-follow-link {
     font-size: 0.7rem;
   }
