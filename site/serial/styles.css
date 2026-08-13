@@ -181,6 +181,11 @@ a:focus-visible {
   margin-top: 24px;
 }
 
+.series-list {
+  display: grid;
+  gap: 20px;
+}
+
 .series-card,
 .series-note {
   padding: 28px;
