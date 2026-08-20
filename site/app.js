@@ -2160,89 +2160,207 @@ function renderMedia(post) {
   section.className = 'reader-media';
   const heading = document.createElement('h3');
   heading.textContent = `附件 ${formatCount(allItems.length)}`;
-  const grid = document.createElement('div');
-  grid.className = 'media-grid';
+  const imageItems = mediaItems.filter(isImage);
+  const nonImageItems = [...youtubeItems, ...mediaItems.filter((item) => !isImage(item))];
+  const nodes = [];
 
-  grid.replaceChildren(...allItems.map((item, index) => {
-    if (item.kind === 'youtube') {
-      const figure = document.createElement('figure');
-      const frame = document.createElement('iframe');
-      frame.className = 'youtube-frame';
-      frame.src = youtubeEmbedUrl(item);
-      frame.title = `${displayTitle(post)} YouTube 影片 ${index + 1}`;
-      frame.loading = 'lazy';
-      frame.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';
-      frame.allowFullscreen = true;
-      const caption = document.createElement('figcaption');
-      caption.textContent = item.label || 'YouTube 影片';
-      const link = document.createElement('a');
-      link.href = youtubeWatchUrl(item);
-      link.target = '_blank';
-      link.rel = 'noopener noreferrer';
-      link.textContent = '開啟 YouTube';
-      figure.append(frame, caption, link);
-      return figure;
-    }
+  if (imageItems.length > 1) {
+    nodes.push(renderImageGallery(post, imageItems));
+  }
 
-    if (isImage(item)) {
-      const figure = document.createElement('figure');
-      const image = document.createElement('img');
-      image.src = assetUrl(item);
-      image.alt = `${displayTitle(post)} 附圖 ${index + 1}`;
-      image.loading = 'lazy';
-      const imageLink = document.createElement('a');
-      imageLink.className = 'image-open-link';
-      imageLink.href = assetUrl(item);
-      imageLink.title = '開啟原圖';
-      imageLink.addEventListener('click', (event) => {
-        event.preventDefault();
-        openImageViewer(assetUrl(item), image.alt);
-      });
-      imageLink.append(image);
-      const caption = document.createElement('figcaption');
-      caption.textContent = item.split('/').at(-1) || `附件 ${index + 1}`;
-      const link = document.createElement('a');
-      link.href = assetUrl(item);
-      link.download = mediaFileName(post, item, index);
-      link.textContent = '下載圖片';
-      const originalLink = document.createElement('a');
-      originalLink.href = assetUrl(item);
-      originalLink.textContent = '開啟原圖';
-      originalLink.addEventListener('click', (event) => {
-        event.preventDefault();
-        openImageViewer(assetUrl(item), image.alt);
-      });
-      figure.append(imageLink, caption, link, originalLink);
-      return figure;
-    }
+  const gridItems = imageItems.length === 1
+    ? [imageItems[0], ...nonImageItems]
+    : nonImageItems;
+  if (gridItems.length) {
+    const grid = document.createElement('div');
+    grid.className = 'media-grid';
+    grid.replaceChildren(...gridItems.map((item, index) => renderMediaFigure(post, item, index)));
+    nodes.push(grid);
+  }
 
-    if (isVideo(item)) {
-      const figure = document.createElement('figure');
-      const video = document.createElement('video');
-      video.src = assetUrl(item);
-      video.controls = true;
-      video.preload = 'auto';
-      video.playsInline = true;
-      video.setAttribute('playsinline', '');
-      video.setAttribute('webkit-playsinline', '');
-      const caption = document.createElement('figcaption');
-      caption.textContent = item.split('/').at(-1) || `附件 ${index + 1}`;
-      const link = document.createElement('a');
-      link.href = assetUrl(item);
-      link.download = mediaFileName(post, item, index);
-      link.textContent = '下載影片';
-      figure.append(video, caption, link);
-      return figure;
-    }
-
-    const link = document.createElement('a');
-    link.href = assetUrl(item);
-    link.textContent = item.split('/').at(-1) || `附件 ${index + 1}`;
-    return link;
-  }));
-
-  section.append(heading, grid);
+  section.append(heading, ...nodes);
   return section;
+}
+
+function renderMediaFigure(post, item, index) {
+  if (item.kind === 'youtube') return renderYoutubeFigure(post, item, index);
+  if (isImage(item)) return renderImageFigure(post, item, index);
+  if (isVideo(item)) return renderVideoFigure(post, item, index);
+
+  const link = document.createElement('a');
+  link.href = assetUrl(item);
+  link.textContent = item.split('/').at(-1) || `附件 ${index + 1}`;
+  return link;
+}
+
+function renderYoutubeFigure(post, item, index) {
+  const figure = document.createElement('figure');
+  const frame = document.createElement('iframe');
+  frame.className = 'youtube-frame';
+  frame.src = youtubeEmbedUrl(item);
+  frame.title = `${displayTitle(post)} YouTube 影片 ${index + 1}`;
+  frame.loading = 'lazy';
+  frame.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';
+  frame.allowFullscreen = true;
+  const caption = document.createElement('figcaption');
+  caption.textContent = item.label || 'YouTube 影片';
+  const link = document.createElement('a');
+  link.href = youtubeWatchUrl(item);
+  link.target = '_blank';
+  link.rel = 'noopener noreferrer';
+  link.textContent = '開啟 YouTube';
+  figure.append(frame, caption, link);
+  return figure;
+}
+
+function renderImageFigure(post, item, index) {
+  const figure = document.createElement('figure');
+  const image = document.createElement('img');
+  image.src = assetUrl(item);
+  image.alt = `${displayTitle(post)} 附圖 ${index + 1}`;
+  image.loading = 'lazy';
+  const imageLink = document.createElement('a');
+  imageLink.className = 'image-open-link';
+  imageLink.href = assetUrl(item);
+  imageLink.title = '開啟原圖';
+  imageLink.addEventListener('click', (event) => {
+    event.preventDefault();
+    openImageViewer(assetUrl(item), image.alt);
+  });
+  imageLink.append(image);
+  const caption = document.createElement('figcaption');
+  caption.textContent = item.split('/').at(-1) || `附件 ${index + 1}`;
+  const link = document.createElement('a');
+  link.href = assetUrl(item);
+  link.download = mediaFileName(post, item, index);
+  link.textContent = '下載圖片';
+  const originalLink = document.createElement('a');
+  originalLink.href = assetUrl(item);
+  originalLink.textContent = '開啟原圖';
+  originalLink.addEventListener('click', (event) => {
+    event.preventDefault();
+    openImageViewer(assetUrl(item), image.alt);
+  });
+  figure.append(imageLink, caption, link, originalLink);
+  return figure;
+}
+
+function renderVideoFigure(post, item, index) {
+  const figure = document.createElement('figure');
+  const video = document.createElement('video');
+  video.src = assetUrl(item);
+  video.controls = true;
+  video.preload = 'auto';
+  video.playsInline = true;
+  video.setAttribute('playsinline', '');
+  video.setAttribute('webkit-playsinline', '');
+  const caption = document.createElement('figcaption');
+  caption.textContent = item.split('/').at(-1) || `附件 ${index + 1}`;
+  const link = document.createElement('a');
+  link.href = assetUrl(item);
+  link.download = mediaFileName(post, item, index);
+  link.textContent = '下載影片';
+  figure.append(video, caption, link);
+  return figure;
+}
+
+function renderImageGallery(post, items) {
+  let activeIndex = 0;
+  const gallery = document.createElement('section');
+  gallery.className = 'image-gallery';
+  gallery.setAttribute('aria-label', `${displayTitle(post)} 圖片相簿`);
+
+  const stage = document.createElement('div');
+  stage.className = 'image-gallery-stage';
+
+  const previousButton = imageGalleryArrow('上一張', 'previous');
+  const nextButton = imageGalleryArrow('下一張', 'next');
+
+  const imageButton = document.createElement('button');
+  imageButton.type = 'button';
+  imageButton.className = 'image-gallery-main';
+  imageButton.setAttribute('aria-label', '開啟目前圖片原圖');
+  const image = document.createElement('img');
+  image.loading = 'lazy';
+  image.decoding = 'async';
+  imageButton.append(image);
+  imageButton.addEventListener('click', () => openImageViewer(image.src, image.alt));
+
+  stage.append(previousButton, imageButton, nextButton);
+
+  const footer = document.createElement('div');
+  footer.className = 'image-gallery-footer';
+  const counter = document.createElement('span');
+  counter.className = 'image-gallery-counter';
+  const caption = document.createElement('span');
+  caption.className = 'image-gallery-caption';
+  const actions = document.createElement('span');
+  actions.className = 'image-gallery-actions';
+  const downloadLink = document.createElement('a');
+  downloadLink.textContent = '下載這張';
+  const originalLink = document.createElement('a');
+  originalLink.textContent = '開啟原圖';
+  actions.append(downloadLink, originalLink);
+  footer.append(counter, caption, actions);
+
+  const thumbs = document.createElement('div');
+  thumbs.className = 'image-gallery-thumbs';
+  const thumbButtons = items.map((item, index) => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'image-gallery-thumb';
+    button.setAttribute('aria-label', `切換到第 ${formatCount(index + 1)} 張圖片`);
+    button.addEventListener('click', () => setActiveImage(index));
+    const thumb = document.createElement('img');
+    thumb.src = assetUrl(item);
+    thumb.alt = '';
+    thumb.loading = 'lazy';
+    button.append(thumb);
+    return button;
+  });
+  thumbs.replaceChildren(...thumbButtons);
+
+  function setActiveImage(nextIndex) {
+    activeIndex = (nextIndex + items.length) % items.length;
+    const item = items[activeIndex];
+    const url = assetUrl(item);
+    const alt = `${displayTitle(post)} 附圖 ${activeIndex + 1}`;
+    image.src = url;
+    image.alt = alt;
+    counter.textContent = `${formatCount(activeIndex + 1)} / ${formatCount(items.length)}`;
+    caption.textContent = item.split('/').at(-1) || `附件 ${activeIndex + 1}`;
+    downloadLink.href = url;
+    downloadLink.download = mediaFileName(post, item, activeIndex);
+    originalLink.href = url;
+    originalLink.onclick = (event) => {
+      event.preventDefault();
+      openImageViewer(url, alt);
+    };
+    thumbButtons.forEach((button, index) => {
+      button.setAttribute('aria-current', String(index === activeIndex));
+    });
+    thumbButtons[activeIndex]?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'nearest',
+      inline: 'nearest'
+    });
+  }
+
+  previousButton.addEventListener('click', () => setActiveImage(activeIndex - 1));
+  nextButton.addEventListener('click', () => setActiveImage(activeIndex + 1));
+  setActiveImage(0);
+
+  gallery.append(stage, footer, thumbs);
+  return gallery;
+}
+
+function imageGalleryArrow(label, direction) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = `image-gallery-arrow image-gallery-arrow-${direction}`;
+  button.textContent = direction === 'previous' ? '‹' : '›';
+  button.setAttribute('aria-label', label);
+  return button;
 }
 
 function openImageViewer(src, label) {
