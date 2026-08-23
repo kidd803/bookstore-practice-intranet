@@ -239,6 +239,7 @@ const summary = document.querySelector('#summary');
 const categoryBar = document.querySelector('#categoryBar');
 const recommendationBand = document.querySelector('#recommendationBand');
 const readingGateway = document.querySelector('#readingGateway');
+const bookVideoShelf = document.querySelector('#bookVideoShelf');
 const postList = document.querySelector('#postList');
 const reader = document.querySelector('#reader');
 const layout = document.querySelector('.layout');
@@ -366,6 +367,7 @@ function render(options = {}) {
   renderReadingGateway();
   renderCategories();
   renderRecommendationBand(selected?.id || null);
+  renderBookVideoShelf();
   renderStats(filtered);
   renderPosts(filtered, selected);
   renderReader(selected);
@@ -734,10 +736,9 @@ function renderReader(post) {
 function renderRecommendationBand(selectedId) {
   if (!recommendationBand) return;
   const fixedCarousel = renderFixedBookCarousel();
-  const bookVideoCarousel = renderBookVideoCarousel();
   const hourlyRecommendation = renderHourlyRecommendation(selectedId, 'band');
   recommendationBand.replaceChildren(
-    ...[fixedCarousel, bookVideoCarousel, hourlyRecommendation].filter((section) => section && !section.hidden)
+    ...[fixedCarousel, hourlyRecommendation].filter((section) => section && !section.hidden)
   );
 }
 
@@ -889,10 +890,37 @@ function openFixedBookPost(post) {
   scrollToResults();
 }
 
-function renderBookVideoCarousel() {
+function renderBookVideoShelf() {
+  if (!bookVideoShelf) return;
+  const carousel = renderBookVideoCarousel('shelf');
+  if (!carousel || carousel.hidden) {
+    bookVideoShelf.hidden = true;
+    bookVideoShelf.replaceChildren();
+    return;
+  }
+
+  bookVideoShelf.hidden = false;
+  const heading = document.createElement('div');
+  heading.className = 'book-video-shelf-heading';
+  const eyebrow = document.createElement('span');
+  eyebrow.textContent = '短影音書架';
+  const title = document.createElement('strong');
+  title.textContent = BOOK_VIDEO_SERIES;
+  const note = document.createElement('p');
+  note.textContent = '先翻幾頁，看見一本書的氣味；想深入時，再回文章慢慢讀。';
+  heading.append(eyebrow, title, note);
+  bookVideoShelf.replaceChildren(heading, carousel);
+}
+
+function updateBookVideoShelf() {
+  if (bookVideoShelf) renderBookVideoShelf();
+}
+
+function renderBookVideoCarousel(placement = '') {
   const items = bookVideoCarouselItems();
   const section = document.createElement('section');
   section.className = 'book-video-carousel';
+  if (placement) section.classList.add(`book-video-carousel-${placement}`);
   section.setAttribute('aria-label', BOOK_VIDEO_SERIES);
   if (!items.length) {
     section.hidden = true;
@@ -986,7 +1014,7 @@ function bookVideoThumbButton(item, index, activeIndex) {
   button.setAttribute('aria-label', `切換到短影音：${bookVideoTitle(item)}`);
   button.addEventListener('click', () => {
     state.bookVideoIndex = index;
-    renderRecommendationBand(state.selectedId);
+    updateBookVideoShelf();
   });
 
   const image = document.createElement('img');
@@ -1017,7 +1045,7 @@ function bookVideoCarouselControlButton(label, direction, count) {
   button.disabled = count < 2;
   button.addEventListener('click', () => {
     state.bookVideoIndex = (state.bookVideoIndex + direction + count) % count;
-    renderRecommendationBand(state.selectedId);
+    updateBookVideoShelf();
   });
   return button;
 }
