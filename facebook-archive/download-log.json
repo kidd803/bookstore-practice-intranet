@@ -35,6 +35,12 @@
       "filename": "facebook-www2bookscomtw-2026-7-27-ArXKAXqw.zip",
       "sizeBytes": 2187692361,
       "type": "zip"
+    },
+    {
+      "date": "2026-08-23",
+      "filename": "facebook-www2bookscomtw-2026-8-23-oYERYFdn.zip",
+      "sizeBytes": 1854551454,
+      "type": "zip"
     }
   ],
   "pending": [
@@ -45,6 +51,14 @@
       "description": "Meta 顯示可下載 JSON 匯出檔，大小約 2.04 GB，到期日 2026-07-30；已下載並整合。",
       "downloaded": true,
       "downloadedAt": "2026-07-27T13:55:13+08:00"
+    },
+    {
+      "dateObserved": "2026-08-22",
+      "source": "Meta 帳號中心",
+      "profile": "林宜毅",
+      "description": "已下載並整合 2026-08-23 匯出檔；內容：貼文、Reel、Live 影片；影像畫質中等。",
+      "downloaded": true,
+      "downloadedAt": "2026-08-24T00:04:31+08:00"
     }
   ]
 }
