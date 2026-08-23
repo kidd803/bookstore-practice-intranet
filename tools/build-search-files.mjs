@@ -39,6 +39,7 @@ const EXCLUDED_CATEGORIES = new Set([
 const PRIORITY_SERIES = new Set([
   '納瓦爾寶典',
   '龍門心法',
+  '道系實習生活',
   '道德經',
   '全真教法統',
   '全真道歷史',

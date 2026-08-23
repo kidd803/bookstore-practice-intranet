@@ -212,6 +212,17 @@ const KNOWN_SERIES = [
     matchChars: 420
   },
   {
+    name: '道系實習生活',
+    total: null,
+    unit: '戒',
+    anyKeywords: ['道系實習生活'],
+    indexPatterns: [
+      '《?中極戒》?第\\s*([一二三四五六七八九十百零〇○0-9]{1,8})\\s*戒'
+    ],
+    matchLines: 4,
+    matchChars: 420
+  },
+  {
     name: '納瓦爾寶典',
     total: null,
     unit: '講',
@@ -1479,16 +1490,25 @@ function chineseNumber(value) {
     八: 8,
     九: 9
   };
-  if (value === '十') return 10;
-  const tenIndex = value.indexOf('十');
-  if (tenIndex >= 0) {
-    const before = value.slice(0, tenIndex);
-    const after = value.slice(tenIndex + 1);
-    const tens = before ? digits[before] : 1;
-    const ones = after ? digits[after] : 0;
-    return (tens || 0) * 10 + (ones || 0);
+  const units = { 十: 10, 百: 100, 千: 1000 };
+  const normalized = String(value || '').trim();
+  if (!normalized) return 0;
+  if (![...normalized].some((char) => units[char])) {
+    return [...normalized].reduce((sum, char) => sum * 10 + (digits[char] || 0), 0);
   }
-  return [...value].reduce((sum, char) => sum * 10 + (digits[char] || 0), 0);
+  let total = 0;
+  let number = 0;
+  for (const char of normalized) {
+    if (Object.hasOwn(digits, char)) {
+      number = digits[char];
+      continue;
+    }
+    if (Object.hasOwn(units, char)) {
+      total += (number || 1) * units[char];
+      number = 0;
+    }
+  }
+  return total + number;
 }
 
 function chapterNumberValue(value = '') {
