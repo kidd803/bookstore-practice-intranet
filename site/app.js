@@ -8,6 +8,7 @@ const BOOK_VIDEO_SERIES = '書店翻書短影音';
 const BOOKSTORE_COLLECTION_URL = 'https://www.2book.tw/collections/';
 const NAVAL_SERIES = '納瓦爾寶典';
 const NAVAL_PRODUCT_URL = 'https://2book.tw/products/-957m-全新書-納瓦爾寶典-從白手起家到財務自由-矽谷傳奇創投家的投資哲學與人生智慧-臻品齋書店-';
+const DAILY_BOOK_PICK_SERIES = '書店老闆每日選書';
 const PUBLIC_SITE_URL = 'https://2books.com.tw/';
 const REMOTE_FACEBOOK_MEDIA_BASE_URL = 'https://storage.googleapis.com/2books-facebook-images/facebook_posts/_extracted/';
 const POST_QUERY_PARAM = 'post';
@@ -30,7 +31,7 @@ const SERIES_SLUGS = new Map([
   ['長春真人西遊記', 'changchun-journey'],
   ['柏拉圖', 'plato'],
   ['重陽立教十五論', 'chongyang-fifteen'],
-  ['書店老闆每日選書', 'daily-book-picks'],
+  [DAILY_BOOK_PICK_SERIES, 'daily-book-picks'],
   ['書店老闆讀史哲', 'history-philosophy'],
   ['書店老闆觀察ＡＩ', 'ai-observations'],
   ['海明威', 'hemingway'],
@@ -114,7 +115,7 @@ const READING_LANES = [
     lead: '有些書值得慢慢找，有些書要先懂脈絡再買。這裡放我選書、理書與經營的判斷。',
     chips: ['選書', '判斷', '臻品齋'],
     categories: ['書籍選品與推薦', '書店營運與電商', '創業工作與經營筆記'],
-    series: ['書店老闆每日選書', '理書日記', '納瓦爾寶典', '道士在書中找到黃金屋', '書店老闆觀察ＡＩ']
+    series: [DAILY_BOOK_PICK_SERIES, '理書日記', '納瓦爾寶典', '道士在書中找到黃金屋', '書店老闆觀察ＡＩ']
   },
   {
     key: 'literature',
@@ -161,7 +162,7 @@ const BOOK_CATEGORY_RECOMMENDATIONS = new Map([
   ['八二三注', '軍事'],
   ['鹿邑之旅', '五術 宗教 易經'],
   ['納瓦爾寶典', '財經 理財 投資'],
-  ['書店老闆每日選書', '所有商品'],
+  [DAILY_BOOK_PICK_SERIES, '所有商品'],
   ['書籍選品與推薦', '文學 歷史 哲學'],
   ['書店營運與電商', '商業 創業 管理'],
   ['創業工作與經營筆記', '商業 創業 管理'],
@@ -241,10 +242,12 @@ const state = {
   selectedId: initialPostId(),
   recommendationOpenId: null,
   featuredCarouselIndex: 0,
+  dailyBookPickCarouselIndex: 0,
   bookVideoIndex: 0,
   lane: null
 };
 let featuredCarouselTimer = null;
+let dailyBookPickCarouselTimer = null;
 const shouldScrollToInitialPost = Boolean(state.selectedId);
 
 const summary = document.querySelector('#summary');
@@ -353,6 +356,7 @@ if (isAdminMode) {
 }
 render();
 startFeaturedCarousel();
+startDailyBookPickCarousel();
 if (shouldScrollToInitialPost) {
   requestAnimationFrame(() => scrollToSelectedPost());
 }
@@ -754,9 +758,9 @@ function renderReader(post) {
 function renderRecommendationBand(selectedId) {
   if (!recommendationBand) return;
   const fixedCarousel = renderFixedBookCarousel();
-  const hourlyRecommendation = renderHourlyRecommendation(selectedId, 'band');
+  const dailyBookPickCarousel = renderDailyBookPickCarousel(selectedId);
   recommendationBand.replaceChildren(
-    ...[fixedCarousel, hourlyRecommendation].filter((section) => section && !section.hidden)
+    ...[fixedCarousel, dailyBookPickCarousel].filter((section) => section && !section.hidden)
   );
 }
 
@@ -773,6 +777,21 @@ function updateFixedBookCarousel() {
     return;
   }
   recommendationBand.prepend(nextCarousel);
+}
+
+function updateDailyBookPickCarousel() {
+  if (!recommendationBand) return;
+  const nextCarousel = renderDailyBookPickCarousel(state.selectedId);
+  const currentCarousel = recommendationBand.querySelector('.daily-book-carousel');
+  if (!nextCarousel || nextCarousel.hidden) {
+    currentCarousel?.remove();
+    return;
+  }
+  if (currentCarousel) {
+    currentCarousel.replaceWith(nextCarousel);
+    return;
+  }
+  recommendationBand.append(nextCarousel);
 }
 
 function renderFixedBookCarousel() {
@@ -908,6 +927,114 @@ function openFixedBookPost(post) {
   setPostUrl(post.id);
   render();
   scrollToResults();
+}
+
+function renderDailyBookPickCarousel(selectedId) {
+  const items = dailyBookPickCarouselPosts();
+  const section = document.createElement('section');
+  section.className = 'daily-book-carousel';
+  section.setAttribute('aria-label', '書店老闆每日選書輪播');
+  if (!items.length) {
+    section.hidden = true;
+    return section;
+  }
+
+  let activeIndex = Math.min(state.dailyBookPickCarouselIndex, items.length - 1);
+  if (items.length > 1 && items[activeIndex]?.id === selectedId) {
+    activeIndex = (activeIndex + 1) % items.length;
+  }
+  state.dailyBookPickCarouselIndex = activeIndex;
+  const post = items[activeIndex];
+
+  const media = document.createElement('figure');
+  media.className = 'daily-book-carousel-media';
+  const image = document.createElement('img');
+  image.src = recommendationImageUrl(post);
+  image.alt = `${displayTitle(post)} 選書圖`;
+  image.loading = 'lazy';
+  image.addEventListener('error', () => {
+    image.src = 'assets/bookstore-practice.jpg';
+  }, { once: true });
+  media.append(image);
+
+  const content = document.createElement('div');
+  content.className = 'daily-book-carousel-content';
+
+  const head = document.createElement('div');
+  head.className = 'daily-book-carousel-head';
+  const label = document.createElement('span');
+  label.textContent = DAILY_BOOK_PICK_SERIES;
+  const count = document.createElement('span');
+  count.textContent = `${formatCount(items.length)}篇`;
+  head.append(label, count);
+
+  const meta = document.createElement('div');
+  meta.className = 'post-meta daily-book-carousel-meta';
+  const date = document.createElement('time');
+  date.textContent = post.date;
+  meta.append(date, seriesBadge(post));
+
+  const title = document.createElement('h2');
+  title.textContent = displayTitle(post);
+
+  const note = document.createElement('p');
+  note.textContent = '每天從書店老闆的選書文章裡挑一本：先看脈絡，再決定要不要找這本書。';
+
+  const actions = document.createElement('div');
+  actions.className = 'daily-book-carousel-actions';
+  const readButton = document.createElement('button');
+  readButton.type = 'button';
+  readButton.textContent = '打開這篇';
+  readButton.addEventListener('click', () => openDailyBookPickPost(post));
+  actions.append(readButton, bookstoreCategoryLink(post, '找相關書'));
+
+  const controls = document.createElement('div');
+  controls.className = 'daily-book-carousel-controls';
+  const previousButton = dailyBookPickCarouselControlButton('上一篇每日選書', -1, items.length);
+  const counter = document.createElement('span');
+  counter.className = 'daily-book-carousel-counter';
+  counter.textContent = `第 ${formatCount(activeIndex + 1)} / ${formatCount(items.length)} 篇`;
+  const nextButton = dailyBookPickCarouselControlButton('下一篇每日選書', 1, items.length);
+  controls.append(previousButton, counter, nextButton);
+
+  content.append(head, meta, title, note, actions, controls);
+  section.append(media, content);
+  return section;
+}
+
+function dailyBookPickCarouselPosts() {
+  return posts
+    .filter((post) => post.series === DAILY_BOOK_PICK_SERIES)
+    .filter((post) => !isImageOnlyPost(post))
+    .sort((a, b) => b.timestamp - a.timestamp);
+}
+
+function dailyBookPickCarouselControlButton(label, direction, count) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'daily-book-carousel-arrow';
+  button.textContent = direction < 0 ? '‹' : '›';
+  button.setAttribute('aria-label', label);
+  button.disabled = count < 2;
+  button.addEventListener('click', () => {
+    state.dailyBookPickCarouselIndex = (state.dailyBookPickCarouselIndex + direction + count) % count;
+    updateDailyBookPickCarousel();
+  });
+  return button;
+}
+
+function openDailyBookPickPost(post) {
+  state.category = '全部';
+  state.series = DAILY_BOOK_PICK_SERIES;
+  state.lane = null;
+  state.query = '';
+  state.visible = PAGE_SIZE;
+  state.selectedId = post.id;
+  state.recommendationOpenId = null;
+  searchInput.value = '';
+  setPostUrl(post.id);
+  render({ preserveScroll: true });
+  requestAnimationFrame(() => scrollToSelectedPost());
 }
 
 function renderBookVideoShelf() {
@@ -1091,6 +1218,16 @@ function startFeaturedCarousel() {
     if (count < 2) return;
     state.featuredCarouselIndex = (state.featuredCarouselIndex + 1) % count;
     updateFixedBookCarousel();
+  }, FEATURED_CAROUSEL_INTERVAL_MS);
+}
+
+function startDailyBookPickCarousel() {
+  if (dailyBookPickCarouselTimer) return;
+  dailyBookPickCarouselTimer = setInterval(() => {
+    const count = dailyBookPickCarouselPosts().length;
+    if (count < 2) return;
+    state.dailyBookPickCarouselIndex = (state.dailyBookPickCarouselIndex + 1) % count;
+    updateDailyBookPickCarousel();
   }, FEATURED_CAROUSEL_INTERVAL_MS);
 }
 
