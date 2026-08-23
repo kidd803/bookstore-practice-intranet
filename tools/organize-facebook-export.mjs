@@ -669,7 +669,7 @@ function enrichPost(post, sourceRoot, categories) {
   const datetime = new Date(timestamp * 1000).toISOString();
   const date = taipeiDate(timestamp);
   const preliminaryCategory = normalizeCategoryName(categorize(text, categories));
-  const seriesInfo = inferSeries(text, preliminaryCategory);
+  const seriesInfo = inferSeries(text, preliminaryCategory, { body, media });
   let category = seriesInfo.name ? '' : preliminaryCategory;
   if (!seriesInfo.name && !body && media.length) category = 'Reels';
   if (!seriesInfo.name && category === LIFESTYLE_CATEGORY) {
@@ -1070,7 +1070,7 @@ function shingles(value, size) {
   return result;
 }
 
-function inferSeries(text, preliminaryCategory = '') {
+function inferSeries(text, preliminaryCategory = '', context = {}) {
   for (const series of KNOWN_SERIES) {
     if (series.category && preliminaryCategory !== series.category) continue;
     const probeText = seriesProbeText(text, series.matchLines || 1, series.matchChars || 0);
@@ -1085,7 +1085,26 @@ function inferSeries(text, preliminaryCategory = '') {
       unit: series.dynamicUnit ? inferSeriesUnit(probeText, series.unit) : series.unit
     };
   }
+  if (isDailyBookPick(text, context)) {
+    return {
+      name: '書店老闆每日選書',
+      index: null,
+      total: null,
+      unit: '篇'
+    };
+  }
   return { name: '', index: null, total: null, unit: '' };
+}
+
+function isDailyBookPick(text, { body = '', media = [] } = {}) {
+  const bodyText = String(body || '');
+  if (bodyText.length < 480) return false;
+  if ((media || []).filter(isLikelyImageMedia).length < 1) return false;
+  if (!/《[^》]{2,80}》/.test(text)) return false;
+  if (!/(作者|出版社|出版|所著|編著|主編)/.test(text)) return false;
+  if (!/(本書|全書|書中|內容|收藏|版本|套書|內頁|書況|推薦|讀者|研究|經典|珍藏|絕版|品相)/.test(text)) return false;
+  if (/書籍搜尋功能已上線|傳送門|搜尋功能/.test(text)) return false;
+  return true;
 }
 
 function seriesProbeText(text, lineLimit = 1, charLimit = 0) {
@@ -1442,6 +1461,10 @@ function unique(values) {
 
 function looksLikeFilePath(value) {
   return /(^|\/)(photos|videos|posts|media)\//i.test(value) || /\.(json|jpg|jpeg|png|mp4)$/i.test(value);
+}
+
+function isLikelyImageMedia(value = '') {
+  return /\.(jpe?g|png|webp|gif)(?:[?#].*)?$/i.test(String(value));
 }
 
 function normalizeSeriesText(value = '') {

@@ -38,6 +38,7 @@ const EXCLUDED_CATEGORIES = new Set([
 
 const PRIORITY_SERIES = new Set([
   '納瓦爾寶典',
+  '書店老闆每日選書',
   '龍門心法',
   '道系實習生活',
   '道德經',
