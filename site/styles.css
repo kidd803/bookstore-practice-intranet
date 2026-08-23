@@ -788,17 +788,17 @@ button:focus,
   border-color: #aec1b6;
 }
 
-a.reading-lane {
+.reading-lane-link {
   border-color: #d6c5ae;
   background: #fff8eb;
 }
 
-a.reading-lane:hover {
+.reading-lane-link:hover {
   border-color: #98523b;
   background: #fff4df;
 }
 
-a.reading-lane .reading-lane-top span {
+.reading-lane-link .reading-lane-top span {
   border-color: rgba(152, 82, 59, 0.18);
   background: #f4dfcb;
   color: #7e4938;

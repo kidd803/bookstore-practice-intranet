@@ -91,7 +91,7 @@ const READING_LANES = [
     title: '我的小說連載',
     lead: '《一條沒有斷掉的線》把書店、貨櫃、道炁與人生轉折寫成長篇小說。',
     chips: ['長篇小說', '道炁重生', '連載中'],
-    href: 'serial/unbroken-line/',
+    href: '/site/serial/unbroken-line/',
     countLabel: '4講'
   },
   {
@@ -502,14 +502,15 @@ function renderReadingGateway() {
   grid.className = 'reading-gateway-grid';
   grid.replaceChildren(...READING_LANES.map((lane) => {
     const count = lane.countLabel || `${formatCount(posts.reduce((sum, post) => sum + (postMatchesLane(post, lane) ? 1 : 0), 0))}篇`;
-    const button = lane.href ? document.createElement('a') : document.createElement('button');
+    const button = document.createElement('a');
     if (lane.href) {
       button.href = lane.href;
     } else {
-      button.type = 'button';
+      button.href = '#postList';
+      button.setAttribute('role', 'button');
       button.setAttribute('aria-pressed', String(state.lane === lane.key));
     }
-    button.className = 'reading-lane';
+    button.className = lane.href ? 'reading-lane reading-lane-link' : 'reading-lane';
 
     const top = document.createElement('span');
     top.className = 'reading-lane-top';
@@ -533,23 +534,31 @@ function renderReadingGateway() {
 
     button.replaceChildren(top, lead, chips);
     if (!lane.href) {
-      button.addEventListener('click', () => {
-        state.lane = state.lane === lane.key ? null : lane.key;
-        state.category = '全部';
-        state.series = '全部系列';
-        state.query = '';
-        state.visible = PAGE_SIZE;
-        state.selectedId = null;
-        searchInput.value = '';
-        clearShareUrl();
-        render();
-        scrollToResults();
+      button.addEventListener('click', (event) => {
+        event.preventDefault();
+        selectReadingLane(lane.key);
       });
     }
     return button;
   }));
 
   readingGateway.replaceChildren(heading, grid);
+}
+
+function selectReadingLane(key) {
+  state.lane = key;
+  state.category = '全部';
+  state.series = '全部系列';
+  state.query = '';
+  state.year = '全部年份';
+  state.publishFilter = '全部狀態';
+  state.visible = PAGE_SIZE;
+  state.selectedId = null;
+  state.recommendationOpenId = null;
+  searchInput.value = '';
+  clearShareUrl();
+  render();
+  scrollToResults();
 }
 
 function renderCategories() {
