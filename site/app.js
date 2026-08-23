@@ -854,15 +854,17 @@ function renderFixedBookCarousel() {
 
 function fixedBookCarouselPosts() {
   const directSeriesPosts = posts.filter((post) => post.series === NAVAL_SERIES);
-  const fallbackPosts = directSeriesPosts.length
-    ? directSeriesPosts
-    : posts.filter((post) => /納瓦爾寶典|Naval Ravikant/i.test(`${displayTitle(post)}\n${displayBody(post)}`));
-  return fallbackPosts
+  if (directSeriesPosts.length) {
+    return directSeriesPosts
+      .filter((post) => !isImageOnlyPost(post))
+      .sort((a, b) => b.timestamp - a.timestamp);
+  }
+  return posts
+    .filter((post) => /納瓦爾寶典|Naval Ravikant/i.test(`${displayTitle(post)}\n${displayBody(post)}`))
     .filter((post) => !isImageOnlyPost(post))
     .filter((post) => displayBody(post).length >= 180)
     .filter((post) => !/蝦皮|Shopee|Yahoo|購買網址|下單|含運費|取貨|售價/i.test(`${displayTitle(post)}\n${displayBody(post)}`))
-    .sort((a, b) => b.timestamp - a.timestamp)
-    .slice(0, 8);
+    .sort((a, b) => b.timestamp - a.timestamp);
 }
 
 function carouselControlButton(label, direction, count) {
