@@ -348,7 +348,7 @@ loadMoreButton.addEventListener('click', () => {
 });
 
 mobileSearchButton.addEventListener('click', () => scrollToSearch());
-topButton.addEventListener('click', () => scrollToTop());
+topButton.addEventListener('click', () => returnToTop());
 
 if (isAdminMode) {
   loadSharedPublishedIds();
@@ -1935,6 +1935,15 @@ function goHome() {
   resetReaderAlignment();
   render({ skipReaderAlign: true });
   requestAnimationFrame(() => scrollToTop('auto'));
+}
+
+function returnToTop() {
+  state.selectedId = null;
+  state.recommendationOpenId = null;
+  clearPostUrl();
+  resetReaderAlignment();
+  render({ skipReaderAlign: true });
+  requestAnimationFrame(() => scrollToTop());
 }
 
 function scrollToResults() {
