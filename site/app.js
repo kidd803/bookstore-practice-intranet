@@ -2174,6 +2174,9 @@ function renderMedia(post) {
   if (gridItems.length) {
     const grid = document.createElement('div');
     grid.className = 'media-grid';
+    if (imageItems.length === 1 && nonImageItems.length === 0) {
+      grid.classList.add('media-grid-single-image');
+    }
     grid.replaceChildren(...gridItems.map((item, index) => renderMediaFigure(post, item, index)));
     nodes.push(grid);
   }

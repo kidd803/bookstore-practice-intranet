@@ -7,6 +7,27 @@ const ROOT = path.resolve(new URL('..', import.meta.url).pathname);
 const POSTS_JS = path.join(ROOT, 'site', 'data', 'posts.js');
 const SITE_URL = 'https://2books.com.tw/';
 
+const STATIC_URLS = [
+  {
+    loc: new URL('site/serial/unbroken-line/', SITE_URL).toString(),
+    lastmod: '2026-08-14',
+    changefreq: 'weekly',
+    priority: '0.9'
+  },
+  ...[1, 2, 3, 4].map((lecture) => ({
+    loc: new URL(`site/serial/unbroken-line/chapter-01-lecture-${String(lecture).padStart(2, '0')}.html`, SITE_URL).toString(),
+    lastmod: '2026-08-14',
+    changefreq: 'monthly',
+    priority: '0.8'
+  })),
+  {
+    loc: new URL('about.html', SITE_URL).toString(),
+    lastmod: '2026-08-13',
+    changefreq: 'monthly',
+    priority: '0.9'
+  }
+];
+
 const EXCLUDED_CATEGORIES = new Set([
   'Reels',
   '生活隨筆與其他',
@@ -57,6 +78,7 @@ const urls = [
     changefreq: 'daily',
     priority: '1.0'
   },
+  ...STATIC_URLS,
   ...selectedPosts.map((post) => ({
     loc: postUrl(post),
     lastmod: post.date || new Date((post.timestamp || Date.now() / 1000) * 1000).toISOString().slice(0, 10),
