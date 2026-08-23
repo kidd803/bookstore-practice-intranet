@@ -776,12 +776,29 @@ button:focus,
   color: var(--ink);
   font: inherit;
   text-align: left;
+  text-decoration: none;
   cursor: pointer;
   box-shadow: 0 4px 12px rgba(52, 47, 41, 0.04);
 }
 
 .reading-lane:hover {
   border-color: #aec1b6;
+}
+
+a.reading-lane {
+  border-color: #d6c5ae;
+  background: #fff8eb;
+}
+
+a.reading-lane:hover {
+  border-color: #98523b;
+  background: #fff4df;
+}
+
+a.reading-lane .reading-lane-top span {
+  border-color: rgba(152, 82, 59, 0.18);
+  background: #f4dfcb;
+  color: #7e4938;
 }
 
 .reading-lane[aria-pressed="true"] {

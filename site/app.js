@@ -86,6 +86,14 @@ const RECOMMENDATION_BLOCKED_TEXT = [
 ];
 const READING_LANES = [
   {
+    key: 'novel',
+    title: '我的小說連載',
+    lead: '《一條沒有斷掉的線》把書店、貨櫃、道炁與人生轉折寫成長篇小說。',
+    chips: ['長篇小說', '道炁重生', '連載中'],
+    href: 'serial/unbroken-line/',
+    countLabel: '4講'
+  },
+  {
     key: 'featured',
     title: '先聽老闆說書',
     lead: '我先從文章裡挑出比較完整的一篇，像在店裡拿起一本書，先說給你聽。',
@@ -483,24 +491,28 @@ function renderReadingGateway() {
   const title = document.createElement('strong');
   title.textContent = '先聽老闆說，再去找書';
   const note = document.createElement('p');
-  note.textContent = '我把平常在臉書寫下的讀書、理書與選書判斷，整理成一條條讀書路線。讀懂了，再到臻品齋找適合自己的書。';
+  note.textContent = '我把平常寫下的讀書、理書、選書判斷與小說連載，整理成一條條可以慢慢進入的路。讀懂了，再到臻品齋找適合自己的書。';
   heading.append(eyebrow, title, note);
 
   const grid = document.createElement('div');
   grid.className = 'reading-gateway-grid';
   grid.replaceChildren(...READING_LANES.map((lane) => {
-    const count = posts.reduce((sum, post) => sum + (postMatchesLane(post, lane) ? 1 : 0), 0);
-    const button = document.createElement('button');
-    button.type = 'button';
+    const count = lane.countLabel || `${formatCount(posts.reduce((sum, post) => sum + (postMatchesLane(post, lane) ? 1 : 0), 0))}篇`;
+    const button = lane.href ? document.createElement('a') : document.createElement('button');
+    if (lane.href) {
+      button.href = lane.href;
+    } else {
+      button.type = 'button';
+      button.setAttribute('aria-pressed', String(state.lane === lane.key));
+    }
     button.className = 'reading-lane';
-    button.setAttribute('aria-pressed', String(state.lane === lane.key));
 
     const top = document.createElement('span');
     top.className = 'reading-lane-top';
     const name = document.createElement('strong');
     name.textContent = lane.title;
     const badge = document.createElement('span');
-    badge.textContent = `${formatCount(count)}篇`;
+    badge.textContent = count;
     top.append(name, badge);
 
     const lead = document.createElement('span');
@@ -516,18 +528,20 @@ function renderReadingGateway() {
     }));
 
     button.replaceChildren(top, lead, chips);
-    button.addEventListener('click', () => {
-      state.lane = state.lane === lane.key ? null : lane.key;
-      state.category = '全部';
-      state.series = '全部系列';
-      state.query = '';
-      state.visible = PAGE_SIZE;
-      state.selectedId = null;
-      searchInput.value = '';
-      clearShareUrl();
-      render();
-      scrollToResults();
-    });
+    if (!lane.href) {
+      button.addEventListener('click', () => {
+        state.lane = state.lane === lane.key ? null : lane.key;
+        state.category = '全部';
+        state.series = '全部系列';
+        state.query = '';
+        state.visible = PAGE_SIZE;
+        state.selectedId = null;
+        searchInput.value = '';
+        clearShareUrl();
+        render();
+        scrollToResults();
+      });
+    }
     return button;
   }));
 
