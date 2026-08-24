@@ -875,21 +875,11 @@ function renderFixedBookCarousel() {
   const controls = document.createElement('div');
   controls.className = 'fixed-book-carousel-controls';
   const previousButton = carouselControlButton('上一篇', -1, items.length);
-  const dots = document.createElement('div');
-  dots.className = 'fixed-book-carousel-dots';
-  dots.replaceChildren(...items.map((item, index) => {
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.setAttribute('aria-label', `切換到第 ${index + 1} 篇：${displayTitle(item)}`);
-    button.setAttribute('aria-current', String(index === activeIndex));
-    button.addEventListener('click', () => {
-      state.featuredCarouselIndex = index;
-      updateFixedBookCarousel();
-    });
-    return button;
-  }));
+  const counter = document.createElement('span');
+  counter.className = 'fixed-book-carousel-counter';
+  counter.textContent = `第 ${formatCount(activeIndex + 1)} / ${formatCount(items.length)} 篇`;
   const nextButton = carouselControlButton('下一篇', 1, items.length);
-  controls.append(previousButton, dots, nextButton);
+  controls.append(previousButton, counter, nextButton);
 
   content.append(head, meta, title, note, actions, controls);
   section.append(media, content);

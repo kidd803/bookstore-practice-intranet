@@ -1467,32 +1467,13 @@ h2 {
   cursor: default;
 }
 
-.fixed-book-carousel-dots {
-  display: flex;
-  flex: 1 1 160px;
-  flex-wrap: nowrap;
-  gap: 6px;
-  max-width: 420px;
-  min-height: 18px;
-  overflow-x: auto;
-  padding: 4px 2px;
-  scrollbar-width: thin;
-}
-
-.fixed-book-carousel-dots button {
-  flex: 0 0 auto;
-  width: 9px;
-  height: 9px;
-  padding: 0;
-  border: 0;
-  border-radius: 999px;
-  background: #d8cfbb;
-  cursor: pointer;
-}
-
-.fixed-book-carousel-dots button[aria-current="true"] {
-  width: 24px;
-  background: var(--gold);
+.fixed-book-carousel-counter {
+  flex: 1;
+  min-width: 112px;
+  color: var(--muted);
+  font-size: 0.86rem;
+  font-weight: 800;
+  text-align: center;
 }
 
 .daily-book-carousel {
@@ -3249,9 +3230,8 @@ h2 {
     justify-content: space-between;
   }
 
-  .fixed-book-carousel-dots {
-    justify-content: flex-start;
-    max-width: none;
+  .fixed-book-carousel-counter {
+    min-width: 0;
   }
 
   .daily-book-carousel {
