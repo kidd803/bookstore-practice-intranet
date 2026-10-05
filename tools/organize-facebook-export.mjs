@@ -7,6 +7,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
+import { applyPostRules } from './post-rules.mjs';
 
 const execFileAsync = promisify(execFile);
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -286,7 +287,7 @@ const KNOWN_SERIES = [
     matchLines: 3
   },
   {
-    name: '諾貝爾文學奬',
+    name: '諾貝爾文學獎',
     total: null,
     unit: '篇',
     anyKeywords: ['諾貝爾文學奬', '諾貝爾文學獎']
@@ -467,7 +468,8 @@ async function main() {
   const { posts: normalized, report } = mergeDuplicatePosts(cleanPosts);
   report.mojibakeRemoved = mojibakeRemoved;
   report.summary.mojibakeRemovedPosts = mojibakeRemoved.length;
-  const numbered = numberQuanzhenHistoryNewExplorationTitles(normalized);
+  const numbered = numberQuanzhenHistoryNewExplorationTitles(normalized)
+    .map((post) => applyPostRules(post, categories));
 
   await writeOutputs(numbered, outDir, siteDataDir, report);
 

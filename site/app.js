@@ -47,7 +47,7 @@ const SERIES_SLUGS = new Map([
   ['道士在書中找到黃金屋', 'golden-house'],
   ['道系實習生活', 'tao-practice-life'],
   ['道德經', 'daodejing'],
-  ['諾貝爾文學奬', 'nobel-literature'],
+  ['諾貝爾文學獎', 'nobel-literature'],
   ['龍門心法', 'longmen-xinfa'],
   ['蘇格拉底', 'socrates']
 ]);
@@ -123,7 +123,7 @@ const READING_LANES = [
     lead: '從諾貝爾文學、卡繆、李白到聖殿騎士團，我把書裡的人與時代說成容易進入的故事。',
     chips: ['文學', '歷史', '人物'],
     categories: ['文學與諾貝爾', '歷史文明與聖殿'],
-    series: ['諾貝爾文學奬', '聖殿騎士團', '李白', '卡繆', '莎士比亞', '托爾斯泰', '海明威', '村上春樹', '文藝復興', '復旦大學歷史系', '八二三注', '鹿邑之旅']
+    series: ['諾貝爾文學獎', '聖殿騎士團', '李白', '卡繆', '莎士比亞', '托爾斯泰', '海明威', '村上春樹', '文藝復興', '復旦大學歷史系', '八二三注', '鹿邑之旅']
   }
 ];
 const BOOK_CATEGORY_RECOMMENDATIONS = new Map([
@@ -148,7 +148,7 @@ const BOOK_CATEGORY_RECOMMENDATIONS = new Map([
   ['蘇格拉底', '文學 歷史 哲學'],
   ['莊子', '五術 宗教 易經'],
   ['文學與諾貝爾', '文學 歷史 哲學'],
-  ['諾貝爾文學奬', '文學 歷史 哲學'],
+  ['諾貝爾文學獎', '文學 歷史 哲學'],
   ['李白', '文學 歷史 哲學'],
   ['卡繆', '文學 歷史 哲學'],
   ['莎士比亞', '文學 歷史 哲學'],
@@ -1969,7 +1969,6 @@ function resetReaderAlignment() {
 function countByCategory(values) {
   const counts = new Map();
   for (const post of values) {
-    if (post.series) continue;
     const category = post.category;
     if (!category) continue;
     counts.set(category, (counts.get(category) || 0) + 1);
