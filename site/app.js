@@ -5,7 +5,8 @@ const RECOMMENDATION_INTERVAL_MS = 60 * 60 * 1000;
 const FEATURED_CAROUSEL_INTERVAL_MS = 8000;
 const BOOK_VIDEO_CAROUSEL_LIMIT = 10;
 const BOOK_VIDEO_SERIES = '書店翻書短影音';
-const BOOKSTORE_CATEGORY_URL = 'https://2books.com.tw/embed-categories';
+const BOOKSTORE_CATEGORY_URL = 'https://2book.tw/';
+const BOOKSTORE_CATEGORY_ANCHOR = '#two-book-category-frame';
 const NAVAL_SERIES = '納瓦爾寶典';
 const NAVAL_PRODUCT_URL = 'https://2book.tw/products/-957m-全新書-納瓦爾寶典-從白手起家到財務自由-矽谷傳奇創投家的投資哲學與人生智慧-臻品齋書店-';
 const DAILY_BOOK_PICK_SERIES = '書店老闆每日選書';
@@ -1416,7 +1417,8 @@ function bookstoreDirectLink(post) {
 
 function bookstoreCategoryUrl(label = '') {
   const id = BOOKSTORE_CATEGORY_IDS.get(label);
-  return id ? `${BOOKSTORE_CATEGORY_URL}/${encodeURIComponent(id)}` : BOOKSTORE_CATEGORY_URL;
+  const query = id ? `?book-category=${encodeURIComponent(id)}` : '';
+  return `${BOOKSTORE_CATEGORY_URL}${query}${BOOKSTORE_CATEGORY_ANCHOR}`;
 }
 
 function bookstoreCategoryLabel(post) {
