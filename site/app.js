@@ -5,7 +5,7 @@ const RECOMMENDATION_INTERVAL_MS = 60 * 60 * 1000;
 const FEATURED_CAROUSEL_INTERVAL_MS = 8000;
 const BOOK_VIDEO_CAROUSEL_LIMIT = 10;
 const BOOK_VIDEO_SERIES = '書店翻書短影音';
-const BOOKSTORE_COLLECTION_URL = 'https://www.2book.tw/collections/';
+const BOOKSTORE_CATEGORY_URL = 'https://2books.com.tw/embed-categories';
 const NAVAL_SERIES = '納瓦爾寶典';
 const NAVAL_PRODUCT_URL = 'https://2book.tw/products/-957m-全新書-納瓦爾寶典-從白手起家到財務自由-矽谷傳奇創投家的投資哲學與人生智慧-臻品齋書店-';
 const DAILY_BOOK_PICK_SERIES = '書店老闆每日選書';
@@ -135,7 +135,7 @@ const BOOK_CATEGORY_RECOMMENDATIONS = new Map([
   ['書店老闆讀全真道', '五術 宗教 易經'],
   ['重陽立教十五論', '五術 宗教 易經'],
   ['長春真人西遊記', '五術 宗教 易經'],
-  ['圓安易學', '圓安易學書店'],
+  ['圓安易學', '圓安道長推薦'],
   ['宗教民俗與靈修', '五術 宗教 易經'],
   ['聖濟總錄', '醫療 健康'],
   ['中醫養生', '醫療 健康'],
@@ -162,8 +162,8 @@ const BOOK_CATEGORY_RECOMMENDATIONS = new Map([
   ['八二三注', '軍事'],
   ['鹿邑之旅', '五術 宗教 易經'],
   ['納瓦爾寶典', '財經 理財 投資'],
-  [DAILY_BOOK_PICK_SERIES, '所有商品'],
-  ['書籍選品與推薦', '文學 歷史 哲學'],
+  [DAILY_BOOK_PICK_SERIES, '書店老闆推薦'],
+  ['書籍選品與推薦', '書店老闆推薦'],
   ['書店營運與電商', '商業 創業 管理'],
   ['創業工作與經營筆記', '商業 創業 管理'],
   ['理書日記', '文學 歷史 哲學'],
@@ -179,16 +179,29 @@ const BOOK_CATEGORY_RECOMMENDATIONS = new Map([
   ['飲食餐桌與日常', '烹飪 美食 旅遊'],
   ['健康身體與作息', '醫療 健康'],
   ['家庭人情與日常', '親子教育'],
-  ['影音音樂與娛樂', 'CD 唱片 錄音帶'],
-  ['活動公告與直播', '臻品齋好物'],
-  ['Reels', '臻品齋好物'],
+  ['影音音樂與娛樂', '藝術 攝影 美術'],
+  ['活動公告與直播', '全部分類'],
+  ['Reels', '全部分類'],
   ['日常短句與心情', '心靈 勵志'],
-  ['早期短貼與生活記錄', '所有商品'],
-  ['生活隨筆與其他', '所有商品']
+  ['早期短貼與生活記錄', '全部分類'],
+  ['生活隨筆與其他', '全部分類']
 ]);
-const BOOKSTORE_COLLECTION_SLUGS = new Map([
-  ['所有商品', 'all'],
-  ['圓安易學書店', '老頑童書店']
+// 總站分類 ID，對照 https://2books.com.tw/api/categories
+const BOOKSTORE_CATEGORY_IDS = new Map([
+  ['書店老闆推薦', 'owner-picks'],
+  ['烹飪 美食 旅遊', '477038'],
+  ['商業 創業 管理', '477039'],
+  ['電腦 程式 系統 資料庫', '477088'],
+  ['心靈 勵志', '477101'],
+  ['藝術 攝影 美術', '477221'],
+  ['五術 宗教 易經', '477324'],
+  ['財經 理財 投資', '477698'],
+  ['政治 國際 時事', '1595948'],
+  ['醫療 健康', '1597216'],
+  ['軍事', '3710035'],
+  ['親子教育', '3750544'],
+  ['圓安道長推薦', '4153842'],
+  ['文學 歷史 哲學', '474438']
 ]);
 const BOOK_DIRECT_LINKS = new Map([
   [NAVAL_SERIES, {
@@ -1352,12 +1365,15 @@ function renderBookstoreCta(post) {
   const title = document.createElement('h3');
   title.textContent = '讀完想找書';
   const note = document.createElement('p');
+  const allCategories = recommendation.label === '全部分類';
   note.textContent = recommendation.type === 'product'
     ? `這篇文章可以先當作買書前的判斷。想接著看書，我替你接到臻品齋書店「${recommendation.label}」商品頁。`
-    : `這篇文章可以先當作買書前的判斷。想接著找書，我替你接到臻品齋書店「${recommendation.label}」分類。`;
+    : allCategories
+      ? '這篇文章可以先當作買書前的判斷。想接著找書，我替你接到臻品齋書店的全部書籍分類。'
+      : `這篇文章可以先當作買書前的判斷。想接著找書，我替你接到臻品齋書店「${recommendation.label}」分類。`;
   section.append(title, note, bookstoreCategoryLink(post, recommendation.type === 'product'
     ? `看${recommendation.label}`
-    : `看${recommendation.label}書架`));
+    : allCategories ? '看全部書籍分類' : `看${recommendation.label}書架`));
   return section;
 }
 
@@ -1399,8 +1415,8 @@ function bookstoreDirectLink(post) {
 }
 
 function bookstoreCategoryUrl(label = '') {
-  const slug = BOOKSTORE_COLLECTION_SLUGS.get(label) || label.replace(/\s+/g, '-');
-  return `${BOOKSTORE_COLLECTION_URL}${encodeURIComponent(slug)}`;
+  const id = BOOKSTORE_CATEGORY_IDS.get(label);
+  return id ? `${BOOKSTORE_CATEGORY_URL}/${encodeURIComponent(id)}` : BOOKSTORE_CATEGORY_URL;
 }
 
 function bookstoreCategoryLabel(post) {
@@ -1416,7 +1432,7 @@ function bookstoreCategoryLabel(post) {
     if (category) return category;
   }
 
-  return '所有商品';
+  return '全部分類';
 }
 
 function searchKeywordKey(value = '') {
