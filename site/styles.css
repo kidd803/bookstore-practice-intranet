@@ -2191,6 +2191,12 @@ h2 {
   line-height: 1.55;
 }
 
+.bookstore-cta-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .reader-body .image-story-label {
   margin-bottom: 8px;
   color: var(--green);

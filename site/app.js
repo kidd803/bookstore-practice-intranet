@@ -1366,6 +1366,19 @@ function renderBookstoreCta(post) {
   const title = document.createElement('h3');
   title.textContent = '讀完想找書';
   const note = document.createElement('p');
+  if (recommendation.type === 'search') {
+    const category = bookstoreCategoryLabel(post);
+    const categoryText = category === '全部分類' ? '看全部書籍分類' : `看${category}書架`;
+    note.textContent = `想找這本書，我替你到臻品齋書店搜尋《${recommendation.label}》；想多看幾本，也可以順路逛書架。`;
+    const actions = document.createElement('div');
+    actions.className = 'bookstore-cta-actions';
+    actions.append(
+      bookstoreLink(recommendation.url, `搜尋《${recommendation.label}》`),
+      bookstoreLink(bookstoreCategoryUrl(category), categoryText)
+    );
+    section.append(title, note, actions);
+    return section;
+  }
   const allCategories = recommendation.label === '全部分類';
   note.textContent = recommendation.type === 'product'
     ? `這篇文章可以先當作買書前的判斷。想接著看書，我替你接到臻品齋書店「${recommendation.label}」商品頁。`
@@ -1379,10 +1392,13 @@ function renderBookstoreCta(post) {
 }
 
 function bookstoreCategoryLink(post, text) {
-  const recommendation = bookstoreCategoryRecommendation(post);
+  return bookstoreLink(bookstoreCategoryRecommendation(post).url, text);
+}
+
+function bookstoreLink(url, text) {
   const link = document.createElement('a');
   link.className = 'bookstore-search-link';
-  link.href = recommendation.url;
+  link.href = url;
   link.target = '_blank';
   link.rel = 'noopener noreferrer';
   link.textContent = text;
@@ -1392,6 +1408,8 @@ function bookstoreCategoryLink(post, text) {
 function bookstoreCategoryRecommendation(post) {
   const direct = bookstoreDirectLink(post);
   if (direct) return { ...direct, type: 'product' };
+  const book = bookstoreSearchTitle(post);
+  if (book) return { label: book, url: bookstoreSearchUrl(book), type: 'search' };
   const label = bookstoreCategoryLabel(post);
   return {
     label,
@@ -1413,6 +1431,17 @@ function bookstoreDirectLink(post) {
   }
 
   return null;
+}
+
+// 介紹單本書的文章（每日選書、書籍選品），標題開頭是《書名》時直接搜這本書。
+function bookstoreSearchTitle(post) {
+  if (post.series !== DAILY_BOOK_PICK_SERIES && post.category !== '書籍選品與推薦') return '';
+  const match = displayTitle(post).match(/^《([^》]{1,40})》/);
+  return match ? match[1].trim() : '';
+}
+
+function bookstoreSearchUrl(query) {
+  return `${BOOKSTORE_CATEGORY_URL}?book-search=${encodeURIComponent(query)}#two-book-fast-search`;
 }
 
 function bookstoreCategoryUrl(label = '') {
