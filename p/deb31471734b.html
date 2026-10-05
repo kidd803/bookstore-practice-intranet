@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>TLS協定採用主從式架構模型，其目的在於提供兩個應用程式間，透過網路...｜書店的修行（臻品齋）</title>
+    <meta name="description" content="TLS協定採用主從式架構模型，其目的在於提供兩個應用程式間，透過網路的一個不安全通道，建立起安全的連線，來交換資料，防止資料受到竊聽及篡改。 TLS協定的優勢在於它是與應用層協定獨立無關的。高層的應用層協定（例如：HTT…">
+    <link rel="canonical" href="https://blog.2books.com.tw/p/deb31471734b.html">
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="書店的修行（臻品齋）">
+    <meta property="og:title" content="TLS協定採用主從式架構模型，其目的在於提供兩個應用程式間，透過網路...">
+    <meta property="og:description" content="TLS協定採用主從式架構模型，其目的在於提供兩個應用程式間，透過網路的一個不安全通道，建立起安全的連線，來交換資料，防止資料受到竊聽及篡改。 TLS協定的優勢在於它是與應用層協定獨立無關的。高層的應用層協定（例如：HTT…">
+    <meta property="og:url" content="https://blog.2books.com.tw/p/deb31471734b.html">
+    <meta property="og:image" content="https://blog.2books.com.tw/site/assets/bookstore-practice.jpg">
+    <link rel="icon" type="image/png" sizes="32x32" href="/site/assets/favicon-32.png?v=20260806-favicon1">
+    <link rel="apple-touch-icon" href="/site/assets/apple-touch-icon.png?v=20260806-favicon1">
+    <script type="application/ld+json">{"@context":"https://schema.org","@type":"Article","headline":"TLS協定採用主從式架構模型，其目的在於提供兩個應用程式間，透過網路...","description":"TLS協定採用主從式架構模型，其目的在於提供兩個應用程式間，透過網路的一個不安全通道，建立起安全的連線，來交換資料，防止資料受到竊聽及篡改。 TLS協定的優勢在於它是與應用層協定獨立無關的。高層的應用層協定（例如：HTT…","image":["https://blog.2books.com.tw/site/assets/bookstore-practice.jpg"],"datePublished":"2016-07-05T06:09:33.000Z","mainEntityOfPage":"https://blog.2books.com.tw/p/deb31471734b.html","author":{"@type":"Organization","name":"臻品齋書店"},"publisher":{"@type":"Organization","name":"臻品齋書店","url":"https://2book.tw/"}}</script>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZZ6PNK10S8"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-ZZ6PNK10S8');
+    </script>
+    <link rel="stylesheet" href="/site/post.css?v=20261005-1">
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="/">書店的修行<span>臻品齋</span></a>
+      <a class="shop" href="https://2book.tw/">逛臻品齋書店</a>
+    </header>
+    <main class="article">
+      <p class="meta">2016-07-05<span>·</span>創業工作與經營筆記</p>
+      <h1>TLS協定採用主從式架構模型，其目的在於提供兩個應用程式間，透過網路...</h1>
+      <article class="body">
+        <p>TLS協定採用主從式架構模型，其目的在於提供兩個應用程式間，透過網路的一個不安全通道，建立起安全的連線，來交換資料，防止資料受到竊聽及篡改。</p>
+        <p>TLS協定的優勢在於它是與應用層協定獨立無關的。高層的應用層協定（例如：HTTP、FTP、Telnet等等）能透明的建立於TLS協定之上。TLS協定在應用層協定通訊之前就已經完成加密演算法、通訊金鑰的協商以及伺服器認證工作。在此之後應用層協定所傳送的資料都會被加密，從而保證通訊的私密性。</p>
+        <p>TLS協定是可選的，所以如果需要使用就必須配置用戶端和伺服器，有兩種主要方式實作這一目標：一個是使用統一的TLS協定通訊埠（例如：用於HTTPS的埠443）；另一個是用戶端請求伺服器連線到TLS時使用特定的協定機制（例如：郵件、新聞協定和STARTTLS）。一旦用戶端和伺服器都同意使用TLS協定，他們通過使用一個握手過程協商出一個有狀態的連線以傳輸資料[1]。通過握手，用戶端和伺服器協商各種參數用於建立安全連線：</p>
+        <p>當用戶端連線到支援TLS協定的伺服器要求建立安全連線並列出了受支援的密碼組合（加密密碼演算法和加密雜湊函式），握手開始。<br>伺服器從該列表中決定加密和雜湊函式，並通知用戶端。<br>伺服器發回其數位憑證，此憑證通常包含伺服器的名稱、受信任的憑證頒發機構（CA）和伺服器的公鑰。<br>用戶端確認其頒發的憑證的有效性。<br>為了生成會話金鑰用於安全連線，用戶端使用伺服器的公鑰加密隨機生成的金鑰，並將其傳送到伺服器，只有伺服器才能使用自己的私鑰解密。<br>利用亂數，雙方生成用於加密和解密的對稱金鑰。這就是TLS協定的握手，握手完畢後的連線是安全的，直到連線（被）關閉。如果上述任何一個步驟失敗，TLS握手過程就會失敗，並且斷開所有的連線。</p>
+      </article>
+      
+      <section class="cta">
+        <h2>讀完想找書</h2>
+        <p>這篇文章可以先當作買書前的判斷。想接著找書，我替你接到臻品齋書店「商業 創業 管理」分類。</p>
+        <div class="cta-actions">
+          <a class="button primary" href="https://2book.tw/?book-category=477039#two-book-category-frame">看商業 創業 管理書架</a>
+          <a class="button" href="https://2book.tw/#two-book-fast-search">搜尋其他書</a>
+        </div>
+      </section>
+      
+      <p class="more"><a href="https://blog.2books.com.tw/?post=deb31471734b">在「書店的修行」閱讀這篇與更多文章</a></p>
+    </main>
+    <footer class="site-footer">
+      <p>臻品齋書店｜道教、五術、中醫、歷史、哲學，新書、二手書、絕版書</p>
+      <p><a href="https://2book.tw/">2book.tw</a> · <a href="/">書店的修行</a> · <a href="/about.html">書店介紹</a></p>
+    </footer>
+  </body>
+</html>
