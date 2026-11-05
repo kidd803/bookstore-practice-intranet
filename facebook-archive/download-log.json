@@ -2,6 +2,22 @@
   "policy": "Facebook 匯出檔很大；下載前先檢查同日期檔案。若同一天已下載過，直接用本機檔案整合，不要重新下載。",
   "knownExports": [
     {
+      "date": "2026-11-06",
+      "filename": "facebook-www2bookscomtw-2026-11-6-lCEHVnON.zip",
+      "sizeBytes": 248866282,
+      "sha256": "3ed74c416b9637cac76ad55d06a2c3d0ebd7bb1e9129fe78c0708d7b5e5e8d3a",
+      "type": "zip",
+      "requestedFrom": "2026-08-22",
+      "requestedThrough": "2026-11-04",
+      "latestPostDate": "2026-11-03",
+      "newPosts": 300,
+      "totalPosts": 16346,
+      "uploadedImages": 1468,
+      "imageBucket": "gs://2books-facebook-images",
+      "imageProject": "gen-lang-client-0294332616",
+      "note": "Incremental import only. Two identical downloads were found; imported one ZIP. Existing IDs and article links were preserved."
+    },
+    {
       "date": "2026-05-25",
       "filename": "facebook-linyuanan439163-2026-5-25-NpVuDywB.zip",
       "sizeBytes": 1576935351,
