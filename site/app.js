@@ -1,6 +1,6 @@
 const posts = Array.isArray(window.FACEBOOK_POSTS) ? window.FACEBOOK_POSTS : [];
 const videoLinks = normalizeVideoLinks(window.FACEBOOK_VIDEO_LINKS || {});
-const PAGE_SIZE = 80;
+const PAGE_SIZE = 24;
 const RECOMMENDATION_INTERVAL_MS = 60 * 60 * 1000;
 const FEATURED_CAROUSEL_INTERVAL_MS = 8000;
 const BOOK_VIDEO_CAROUSEL_LIMIT = 10;
@@ -97,7 +97,7 @@ const READING_LANES = [
   },
   {
     key: 'featured',
-    title: '先聽老闆說書',
+    title: '老闆說書精選',
     lead: '我先從文章裡挑出比較完整的一篇，像在店裡拿起一本書，先說給你聽。',
     chips: ['說書', '長文', '找書'],
     matcher: isFeaturedReadingPost
@@ -258,8 +258,18 @@ const state = {
   featuredCarouselIndex: 0,
   dailyBookPickCarouselIndex: 0,
   bookVideoIndex: 0,
-  lane: null
+  lane: null,
+  view: 'articles',
+  scope: 'curated',
+  carouselPaused: window.matchMedia('(prefers-reduced-motion: reduce)').matches
 };
+let searchTimer;
+let composingSearch = false;
+let readingContext = null;
+let builtNavigation = false;
+let renderedReaderId = null;
+let renderedListKey = '';
+const searchCache = new Map();
 let featuredCarouselTimer = null;
 let dailyBookPickCarouselTimer = null;
 const shouldScrollToInitialPost = Boolean(state.selectedId);
@@ -298,22 +308,34 @@ document.documentElement.classList.toggle('admin-mode', isAdminMode);
 document.documentElement.classList.toggle('public-mode', !isAdminMode);
 clearUnknownPostUrl();
 applyInitialSeriesFromLocation();
+if (state.series !== '全部系列') state.scope = 'all';
 
 populateYears();
 populateSeries();
 
-searchInput.addEventListener('input', () => {
+function applySearch(scroll = false) {
+  clearTimeout(searchTimer);
   state.query = searchInput.value.trim().toLowerCase();
-  state.category = '全部';
-  state.year = '全部年份';
-  state.series = '全部系列';
   state.lane = null;
-  state.publishFilter = '全部狀態';
+  state.scope = 'all';
+  state.view = 'articles';
   state.visible = PAGE_SIZE;
   state.selectedId = null;
   clearShareUrl();
   render();
+  if (scroll) scrollToResults();
+}
+searchInput.addEventListener('compositionstart', () => { composingSearch = true; });
+searchInput.addEventListener('compositionend', () => { composingSearch = false; applySearch(); });
+searchInput.addEventListener('input', () => {
+  if (composingSearch) return;
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => applySearch(), 240);
 });
+searchInput.addEventListener('keydown', (event) => {
+  if (event.key === 'Enter' && !event.isComposing) applySearch(true);
+});
+document.querySelector('#searchSubmit').addEventListener('click', () => applySearch(true));
 
 sortSelect.addEventListener('change', () => {
   state.sort = sortSelect.value;
@@ -325,12 +347,8 @@ sortSelect.addEventListener('change', () => {
 
 yearSelect.addEventListener('change', () => {
   state.year = yearSelect.value;
-  state.query = '';
-  state.category = '全部';
-  state.series = '全部系列';
-  state.lane = null;
-  state.publishFilter = '全部狀態';
-  searchInput.value = '';
+  state.scope = 'all';
+  state.view = 'articles';
   state.visible = PAGE_SIZE;
   state.selectedId = null;
   clearShareUrl();
@@ -338,13 +356,7 @@ yearSelect.addEventListener('change', () => {
 });
 
 seriesSelect.addEventListener('change', () => {
-  state.series = seriesSelect.value;
-  state.category = '全部';
-  state.lane = null;
-  state.visible = PAGE_SIZE;
-  state.selectedId = null;
-  setSeriesUrl(state.series);
-  render();
+  openSeries(seriesSelect.value);
 });
 
 publishSelect.addEventListener('change', () => {
@@ -361,8 +373,34 @@ loadMoreButton.addEventListener('click', () => {
   render();
 });
 
-mobileSearchButton.addEventListener('click', () => scrollToSearch());
+mobileSearchButton.addEventListener('click', () => returnToList());
 topButton.addEventListener('click', () => returnToTop());
+setControlIcon(topButton, 'ArrowUp', '回首頁並置頂');
+const updateTopButton = () => { topButton.hidden = window.scrollY < 320; };
+window.addEventListener('scroll', updateTopButton, { passive: true });
+updateTopButton();
+document.querySelectorAll('[data-home]').forEach((link) => link.addEventListener('click', (event) => {
+  event.preventDefault();
+  goHome();
+}));
+document.querySelectorAll('[data-view], [data-browse]').forEach((button) => button.addEventListener('click', (event) => {
+  event.preventDefault();
+  openBrowseView(button.dataset.view || button.dataset.browse);
+}));
+document.querySelector('.library-tabs').addEventListener('keydown', (event) => {
+  if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+  const tabs = [...document.querySelectorAll('[data-view]')];
+  const current = tabs.indexOf(document.activeElement);
+  if (current < 0) return;
+  event.preventDefault();
+  const next = event.key === 'Home' ? 0 : event.key === 'End' ? tabs.length - 1
+    : (current + (event.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length;
+  tabs[next].click();
+  tabs[next].focus({ preventScroll: true });
+});
+// Keep the reading area close to the entrance; secondary shelves stay below it.
+document.querySelector('.shell').append(document.querySelector('.novel-serial-banner'), bookVideoShelf, document.querySelector('.seller-trust'));
+window.matchMedia('(max-width: 820px)').addEventListener('change', () => render({ preserveScroll: true }));
 
 if (isAdminMode) {
   loadSharedPublishedIds();
@@ -373,16 +411,24 @@ startFeaturedCarousel();
 startDailyBookPickCarousel();
 if (shouldScrollToInitialPost) {
   requestAnimationFrame(() => scrollToSelectedPost());
+} else if (state.series !== '全部系列') {
+  scrollToResults();
 }
 
-window.addEventListener('popstate', () => {
+window.addEventListener('popstate', (event) => {
+  clearTimeout(searchTimer);
+  if (event.state?.browse) Object.assign(state, event.state.browse);
+  else {
+    Object.assign(state, { category: '全部', query: '', year: '全部年份', series: '全部系列', lane: null, view: 'articles', scope: 'all' });
+  }
   state.selectedId = initialPostId();
   if (!state.selectedId) {
-    state.series = '全部系列';
     applyInitialSeriesFromLocation();
   }
+  searchInput.value = state.query;
   state.recommendationOpenId = null;
-  render({ preserveScroll: true });
+  render();
+  requestAnimationFrame(() => state.selectedId ? scrollToSelectedPost() : window.scrollTo(0, event.state?.scrollY || 0));
 });
 
 function render(options = {}) {
@@ -394,23 +440,36 @@ function render(options = {}) {
   const selected = selectedPost(filtered);
   updateDocumentTitle(selected);
   renderSummary(filtered);
-  renderReadingGateway();
-  renderCategories();
-  renderRecommendationBand(selected?.id || null);
-  renderBookVideoShelf();
-  renderStats(filtered);
-  renderPosts(filtered, selected);
-  renderReader(selected);
-  if (options.skipReaderAlign) {
-    resetReaderAlignment();
-  } else {
-    alignReaderWithSelectedPost(selected);
+  if (!builtNavigation) {
+    renderReadingGateway();
+    renderCategories();
+    renderRecommendationBand(null);
+    renderBookVideoShelf();
+    renderStats(filtered);
+    renderSeriesDirectory();
+    builtNavigation = true;
   }
+  updateBrowseChrome(filtered);
+  const listKey = JSON.stringify([state.query, state.sort, state.year, state.series, state.category, state.lane, state.scope, state.visible, state.publishFilter]);
+  if (listKey !== renderedListKey) {
+    renderPosts(filtered, selected);
+    renderedListKey = listKey;
+  }
+  postList.querySelectorAll('.post-card').forEach((card) => card.setAttribute('aria-current', String(card.dataset.postId === selected?.id)));
+  reader.hidden = !selected;
+  document.body.classList.toggle('is-reading', Boolean(selected));
+  layout.classList.toggle('has-reader', Boolean(selected));
+  if (renderedReaderId !== selected?.id) {
+    renderReader(selected);
+    renderedReaderId = selected?.id;
+  }
+  resetReaderAlignment();
   renderTopicTools(matched);
   yearSelect.value = state.year;
+  sortSelect.value = state.sort;
   seriesSelect.value = state.series;
   publishSelect.value = state.publishFilter;
-  mobileSearchButton.hidden = !(isMobileLayout() && state.selectedId);
+  mobileSearchButton.hidden = !state.selectedId;
   if (scrollPosition) {
     requestAnimationFrame(() => {
       window.scrollTo(scrollPosition.x, scrollPosition.y);
@@ -418,9 +477,193 @@ function render(options = {}) {
   }
 }
 
+function resetFilters() {
+  clearTimeout(searchTimer);
+  Object.assign(state, { category: '全部', query: '', year: '全部年份', series: '全部系列', lane: null,
+    publishFilter: '全部狀態', visible: PAGE_SIZE, selectedId: null, recommendationOpenId: null });
+  searchInput.value = '';
+}
+
+function openBrowseView(view) {
+  resetFilters();
+  state.view = view;
+  state.scope = view === 'articles' ? 'curated' : 'all';
+  clearShareUrl();
+  render();
+  requestAnimationFrame(() => document.querySelector('#library').scrollIntoView({ behavior: scrollBehavior(), block: 'start' }));
+}
+
+function openSeries(series) {
+  resetFilters();
+  Object.assign(state, { series, scope: 'all', view: 'articles' });
+  setSeriesUrl(series);
+  render();
+  scrollToResults();
+}
+
+function updateBrowseChrome(filtered) {
+  const directory = state.view === 'series';
+  const categories = state.view === 'categories';
+  document.querySelector('#seriesDirectory').hidden = !directory;
+  categoryBar.hidden = !categories;
+  document.querySelector('#articleBrowse').hidden = directory || categories;
+  document.querySelector('#articleBrowse').setAttribute('aria-labelledby', state.view === 'archive' ? 'tab-archive' : 'tab-articles');
+  document.querySelectorAll('[data-view]').forEach((button) => {
+    const active = button.dataset.view === state.view;
+    button.setAttribute('aria-selected', String(active));
+    button.tabIndex = active ? 0 : -1;
+  });
+  document.querySelectorAll('[data-series]').forEach((button) => button.setAttribute('aria-pressed', String(button.dataset.series === state.series)));
+  const filters = document.querySelector('#activeFilters');
+  const labels = [state.query && `搜尋：${state.query}`, state.series !== '全部系列' && state.series,
+    state.category !== '全部' && state.category, state.year !== '全部年份' && `${state.year} 年`, activeLane()?.title].filter(Boolean);
+  filters.replaceChildren();
+  if (labels.length) {
+    const text = document.createElement('span');
+    text.textContent = `${labels.join(' · ')} · ${formatCount(filtered.length)} 篇`;
+    const clear = document.createElement('button');
+    clear.type = 'button';
+    clear.textContent = '清除篩選';
+    clear.addEventListener('click', () => openBrowseView('archive'));
+    filters.append(text, clear);
+  }
+  filters.hidden = !labels.length;
+}
+
+function renderSeriesDirectory() {
+  const section = document.querySelector('#seriesDirectory');
+  const heading = document.createElement('div');
+  heading.className = 'directory-heading';
+  const title = document.createElement('h2');
+  title.textContent = '一本書，一路讀下去';
+  const count = document.createElement('span');
+  count.textContent = `${formatCount(seriesNames.length)} 個系列`;
+  heading.append(title, count);
+  const search = document.createElement('input');
+  search.type = 'search';
+  search.placeholder = '尋找系列';
+  search.setAttribute('aria-label', '尋找系列');
+  const grid = document.createElement('div');
+  grid.className = 'series-directory-grid';
+  const priority = [DAILY_BOOK_PICK_SERIES, '龍門心法', '道系實習生活', '道德經', '聖濟總錄', NAVAL_SERIES, '全真道歷史'];
+  const names = [...priority.filter((name) => seriesCounts.has(name)), ...seriesNames.filter((name) => !priority.includes(name))];
+  const cards = names.map((series) => {
+    const link = document.createElement('a');
+    link.href = `${PUBLIC_SITE_URL}?series=${encodeURIComponent(seriesUrlValue(series))}`;
+    link.className = 'series-directory-item';
+    link.dataset.name = series;
+    const title = document.createElement('h3');
+    title.textContent = series;
+    const meta = document.createElement('span');
+    meta.textContent = `${formatCount(seriesCounts.get(series))} 篇`;
+    const latest = posts.filter((post) => postMatchesSeries(post, series)).sort((a, b) => b.timestamp - a.timestamp)[0];
+    const date = document.createElement('p');
+    date.textContent = latest ? `更新至 ${latest.date}` : '';
+    link.append(title, meta, date);
+    link.addEventListener('click', (event) => {
+      if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      event.preventDefault();
+      openSeries(series);
+    });
+    return link;
+  });
+  grid.append(...cards);
+  const empty = document.createElement('p');
+  empty.className = 'empty';
+  empty.textContent = '沒有找到這個系列';
+  empty.hidden = true;
+  search.addEventListener('input', () => {
+    const query = normalizeSearch(search.value);
+    cards.forEach((card) => { card.hidden = !normalizeSearch(card.dataset.name).includes(query); });
+    empty.hidden = cards.some((card) => !card.hidden);
+  });
+  section.replaceChildren(heading, search, grid, empty);
+}
+
+function browseSnapshot() {
+  return { category: state.category, query: state.query, sort: state.sort, year: state.year, series: state.series,
+    lane: state.lane, scope: state.scope, view: state.view, visible: state.visible, publishFilter: state.publishFilter };
+}
+
+function returnToList() {
+  const context = readingContext || window.history.state?.returnContext;
+  if (context?.browse) Object.assign(state, context.browse);
+  state.selectedId = null;
+  state.recommendationOpenId = null;
+  clearPostUrl();
+  searchInput.value = state.query;
+  render();
+  const targetId = context?.postId;
+  requestAnimationFrame(() => {
+    window.scrollTo({ top: context?.scrollY || document.querySelector('#library').offsetTop - 72, behavior: 'instant' });
+    const card = [...postList.querySelectorAll('.post-card')].find((node) => node.dataset.postId === targetId);
+    card?.focus({ preventScroll: true });
+  });
+}
+
+function scrollBehavior() {
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth';
+}
+
+function setControlIcon(button, name, label) {
+  const nodes = window.READING_ICONS?.[name];
+  if (!nodes) return;
+  const namespace = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(namespace, 'svg');
+  Object.entries({ viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '1.8',
+    'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'aria-hidden': 'true', width: '18', height: '18' })
+    .forEach(([key, value]) => svg.setAttribute(key, value));
+  nodes.forEach(([tag, attributes]) => {
+    const node = document.createElementNS(namespace, tag);
+    Object.entries(attributes).forEach(([key, value]) => node.setAttribute(key, value));
+    svg.append(node);
+  });
+  button.replaceChildren(svg);
+  button.setAttribute('aria-label', label);
+  button.title = label;
+}
+
+function readerNavigation(post) {
+  const nav = document.createElement('nav');
+  nav.className = 'reader-pagination';
+  nav.setAttribute('aria-label', post.series ? '繼續閱讀此系列' : '繼續閱讀');
+  const pool = (post.series ? posts.filter((item) => item.series === post.series) : matchPosts())
+    .slice().sort((a, b) => a.timestamp - b.timestamp || a.id.localeCompare(b.id));
+  const index = pool.findIndex((item) => item.id === post.id);
+  [[pool[index - 1], '上一篇'], [pool[index + 1], '下一篇']].forEach(([item, label]) => {
+    if (!item) return;
+    const link = document.createElement('a');
+    link.href = postShareUrl(item);
+    const direction = document.createElement('span');
+    direction.textContent = `${label} · ${item.date}`;
+    const title = document.createElement('strong');
+    title.textContent = displayTitle(item);
+    link.append(direction, title);
+    const subtitle = document.createElement('small');
+    subtitle.textContent = postTeaser(item).slice(0, 72);
+    link.append(subtitle);
+    link.addEventListener('click', (event) => {
+      if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      event.preventDefault();
+      selectPost(item.id);
+    });
+    nav.append(link);
+  });
+  if (post.series) {
+    const directory = document.createElement('button');
+    directory.type = 'button';
+    directory.className = 'reader-series-link';
+    directory.textContent = `回到「${post.series}」目錄`;
+    directory.addEventListener('click', () => openSeries(post.series));
+    nav.append(directory);
+  }
+  return nav;
+}
+
 function matchPosts() {
   const tokens = searchTokens(state.query);
   return posts
+    .filter((post) => state.scope !== 'curated' || isFeaturedReadingPost(post))
     .filter((post) => !state.lane || postMatchesLane(post, activeLane()))
     .filter((post) => state.category === '全部' || post.category === state.category)
     .filter((post) => state.year === '全部年份' || post.date?.startsWith(state.year))
@@ -433,6 +676,8 @@ function matchPosts() {
     })
     .filter((post) => {
       if (!tokens.length) return true;
+      let cached = searchCache.get(post.id);
+      if (!cached) {
       const text = [
         displayTitle(post),
         displayBody(post),
@@ -445,10 +690,11 @@ function matchPosts() {
         post.date,
         ...(post.tags || [])
       ].join('\n');
-      const haystack = normalizeSearch(text);
-      const chapters = chapterNumbers(text);
-      if (post.seriesIndex) chapters.add(post.seriesIndex);
-      return tokens.every((token) => tokenMatches(token, haystack, chapters));
+      cached = { haystack: normalizeSearch(text), chapters: chapterNumbers(text) };
+      if (post.seriesIndex) cached.chapters.add(post.seriesIndex);
+      searchCache.set(post.id, cached);
+      }
+      return tokens.every((token) => tokenMatches(token, cached.haystack, cached.chapters));
     })
     .sort((a, b) => state.sort === 'oldest' ? a.timestamp - b.timestamp : b.timestamp - a.timestamp);
 }
@@ -496,7 +742,7 @@ function renderSummary(filtered) {
       : `共 ${formatCount(total)} 篇，目前符合 ${formatCount(filtered.length)} 篇`;
     return;
   }
-  summary.textContent = `共 ${formatCount(total)} 篇，目前符合 ${formatCount(filtered.length)} 篇`;
+  summary.textContent = `${formatCount(total)} 篇文章 · ${formatCount(seriesNames.length)} 個系列 · 更新至 ${latestPost?.date || ''}`;
 }
 
 function renderReadingGateway() {
@@ -507,7 +753,7 @@ function renderReadingGateway() {
   const eyebrow = document.createElement('span');
   eyebrow.textContent = '說書入口';
   const title = document.createElement('strong');
-  title.textContent = '先聽老闆說，再去找書';
+  title.textContent = '想讀些什麼？';
   const note = document.createElement('p');
   note.textContent = '我把平常寫下的讀書、理書、選書判斷與小說連載，整理成一條條可以慢慢進入的路。讀懂了，再到臻品齋找適合自己的書。';
   heading.append(eyebrow, title, note);
@@ -569,6 +815,8 @@ function selectReadingLane(key) {
   state.visible = PAGE_SIZE;
   state.selectedId = null;
   state.recommendationOpenId = null;
+  state.scope = 'all';
+  state.view = 'articles';
   searchInput.value = '';
   clearShareUrl();
   render();
@@ -592,17 +840,19 @@ function renderCategories() {
   heading.append(eyebrow, title);
 
   const grid = categoryGrid(mainCategories);
-  const archiveHeading = document.createElement('div');
+  const archiveHeading = document.createElement('summary');
   archiveHeading.className = 'categories-subheading';
   const archiveTitle = document.createElement('strong');
-  archiveTitle.textContent = '存檔分類';
+  archiveTitle.textContent = '生活與日常';
   const archiveNote = document.createElement('span');
-  archiveNote.textContent = '日常、短貼、Reels 與活動記錄先收在這裡，想翻舊文時再進去找。';
+  archiveNote.textContent = `${archiveCategories.length} 個主題`;
   archiveHeading.append(archiveTitle, archiveNote);
   const archiveGrid = categoryGrid(archiveCategories);
   archiveGrid.classList.add('category-grid-archive');
 
-  categoryBar.replaceChildren(heading, grid, archiveHeading, archiveGrid);
+  const archive = document.createElement('details');
+  archive.append(archiveHeading, archiveGrid);
+  categoryBar.replaceChildren(heading, grid, archive);
 }
 
 function categoryGrid(categories) {
@@ -624,6 +874,11 @@ function categoryGrid(categories) {
       state.category = category;
       state.series = '全部系列';
       state.lane = null;
+      state.query = '';
+      state.year = '全部年份';
+      state.scope = 'all';
+      state.view = 'articles';
+      searchInput.value = '';
       state.visible = PAGE_SIZE;
       state.selectedId = null;
       clearShareUrl();
@@ -680,15 +935,10 @@ function seriesNav() {
     countNode.className = 'series-nav-count';
     countNode.textContent = `${formatCount(count)}篇`;
     button.replaceChildren(labelNode, countNode);
+    button.dataset.series = series;
     button.setAttribute('aria-pressed', String(state.series === series));
     button.addEventListener('click', () => {
-      state.series = series;
-      state.category = '全部';
-      state.visible = PAGE_SIZE;
-      state.selectedId = null;
-      setSeriesUrl(state.series);
-      render();
-      scrollToResults();
+      openSeries(series);
     });
     return button;
   }));
@@ -702,13 +952,12 @@ function renderPosts(filtered, selected) {
   if (selected && !visiblePosts.some((post) => post.id === selected.id)) {
     visiblePosts.push(selected);
   }
-  const mobileLayout = isMobileLayout();
   resultTitle.textContent = state.series !== '全部系列'
     ? state.series
     : state.lane
       ? activeLane()?.title || '閱讀入口'
       : state.category === '全部'
-        ? '全部文章'
+        ? state.query ? `搜尋「${state.query}」` : state.scope === 'curated' ? '最新說書' : '全部文章'
         : state.category;
   resultMeta.textContent = filtered.length
     ? `顯示 ${formatCount(visiblePosts.length)} / ${formatCount(filtered.length)} 篇`
@@ -728,10 +977,9 @@ function renderPosts(filtered, selected) {
     const node = template.content.firstElementChild.cloneNode(true);
     const isSelected = selected?.id === post.id;
     node.dataset.postId = post.id;
-    node.tabIndex = 0;
-    node.setAttribute('role', 'button');
+    node.tabIndex = -1;
+    node.setAttribute('aria-label', displayTitle(post));
     node.setAttribute('aria-current', String(isSelected));
-    node.setAttribute('aria-expanded', String(mobileLayout && isSelected));
     node.classList.toggle('is-published', isAdminMode && isPublished(post));
     node.querySelector('time').textContent = post.date;
     node.querySelector('.category').textContent = categoryLabel(post);
@@ -744,22 +992,44 @@ function renderPosts(filtered, selected) {
       node.querySelector('.post-meta').append(status);
     }
     node.querySelector('h2').textContent = displayTitle(post);
-    node.querySelector('.excerpt').textContent = excerpt(displayBody(post));
+    const titleLink = document.createElement('a');
+    titleLink.href = postShareUrl(post);
+    titleLink.textContent = displayTitle(post);
+    titleLink.addEventListener('click', (event) => {
+      if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      event.preventDefault();
+      event.stopPropagation();
+      selectPost(post.id);
+    });
+    node.querySelector('h2').replaceChildren(titleLink);
+    const source = recommendationImageSource(post);
+    if (source) {
+      const thumbnail = document.createElement('img');
+      thumbnail.className = 'post-thumbnail';
+      thumbnail.src = assetUrl(source);
+      thumbnail.alt = '';
+      thumbnail.loading = 'lazy';
+      thumbnail.decoding = 'async';
+      thumbnail.width = 112;
+      thumbnail.height = 112;
+      thumbnail.addEventListener('error', () => thumbnail.remove(), { once: true });
+      node.prepend(thumbnail);
+    }
+    node.querySelector('.excerpt').textContent = excerpt(postTeaser(post));
     const tags = node.querySelector('.tags');
-    tags.replaceChildren(...(post.tags || []).map((tag) => {
+    tags.replaceChildren(...(post.tags || []).slice(0, 3).map((tag) => {
       const item = document.createElement('li');
       item.textContent = tag;
       return item;
     }));
-    node.addEventListener('click', () => selectPost(post.id));
+    node.addEventListener('click', (event) => { if (!event.target.closest('a')) selectPost(post.id); });
     node.addEventListener('keydown', (event) => {
-      if (event.key === 'Enter' || event.key === ' ') {
+      if (event.target === node && (event.key === 'Enter' || event.key === ' ')) {
         event.preventDefault();
         selectPost(post.id);
       }
     });
     nodes.push(node);
-    if (mobileLayout && isSelected) nodes.push(inlineReader(post));
   }
 
   postList.replaceChildren(...nodes);
@@ -770,8 +1040,7 @@ function renderReader(post) {
   if (!post) {
     const empty = document.createElement('div');
     empty.className = 'empty reader-empty';
-    empty.textContent = posts.length ? '沒有可閱讀的文章' : '尚未匯入文章資料';
-    reader.replaceChildren(empty);
+    reader.replaceChildren();
     return;
   }
 
@@ -848,7 +1117,7 @@ function renderFixedBookCarousel() {
   const head = document.createElement('div');
   head.className = 'fixed-book-carousel-head';
   const label = document.createElement('span');
-  label.textContent = '固定輪播';
+  label.textContent = '一起讀《納瓦爾寶典》';
   const count = document.createElement('span');
   count.textContent = `${formatCount(items.length)}篇說書`;
   head.append(label, count);
@@ -893,7 +1162,7 @@ function renderFixedBookCarousel() {
   counter.className = 'fixed-book-carousel-counter';
   counter.textContent = `第 ${formatCount(activeIndex + 1)} / ${formatCount(items.length)} 篇`;
   const nextButton = carouselControlButton('下一篇', 1, items.length);
-  controls.append(previousButton, counter, nextButton);
+  controls.append(previousButton, counter, nextButton, carouselPauseButton());
 
   content.append(head, meta, title, note, actions, controls);
   section.append(media, content);
@@ -921,6 +1190,7 @@ function carouselControlButton(label, direction, count) {
   button.className = 'fixed-book-carousel-arrow';
   button.textContent = direction < 0 ? '‹' : '›';
   button.setAttribute('aria-label', label);
+  setControlIcon(button, direction < 0 ? 'ChevronLeft' : 'ChevronRight', label);
   button.disabled = count < 2;
   button.addEventListener('click', () => {
     state.featuredCarouselIndex = (state.featuredCarouselIndex + direction + count) % count;
@@ -930,16 +1200,7 @@ function carouselControlButton(label, direction, count) {
 }
 
 function openFixedBookPost(post) {
-  state.series = NAVAL_SERIES;
-  state.category = '全部';
-  state.lane = null;
-  state.query = '';
-  state.visible = PAGE_SIZE;
-  state.selectedId = post.id;
-  searchInput.value = '';
-  setPostUrl(post.id);
-  render();
-  scrollToResults();
+  selectPost(post.id);
 }
 
 function renderDailyBookPickCarousel(selectedId) {
@@ -1008,7 +1269,7 @@ function renderDailyBookPickCarousel(selectedId) {
   counter.className = 'daily-book-carousel-counter';
   counter.textContent = `第 ${formatCount(activeIndex + 1)} / ${formatCount(items.length)} 篇`;
   const nextButton = dailyBookPickCarouselControlButton('下一篇每日選書', 1, items.length);
-  controls.append(previousButton, counter, nextButton);
+  controls.append(previousButton, counter, nextButton, carouselPauseButton());
 
   content.append(head, meta, title, note, actions, controls);
   section.append(media, content);
@@ -1028,6 +1289,7 @@ function dailyBookPickCarouselControlButton(label, direction, count) {
   button.className = 'daily-book-carousel-arrow';
   button.textContent = direction < 0 ? '‹' : '›';
   button.setAttribute('aria-label', label);
+  setControlIcon(button, direction < 0 ? 'ChevronLeft' : 'ChevronRight', label);
   button.disabled = count < 2;
   button.addEventListener('click', () => {
     state.dailyBookPickCarouselIndex = (state.dailyBookPickCarouselIndex + direction + count) % count;
@@ -1037,17 +1299,7 @@ function dailyBookPickCarouselControlButton(label, direction, count) {
 }
 
 function openDailyBookPickPost(post) {
-  state.category = '全部';
-  state.series = DAILY_BOOK_PICK_SERIES;
-  state.lane = null;
-  state.query = '';
-  state.visible = PAGE_SIZE;
-  state.selectedId = post.id;
-  state.recommendationOpenId = null;
-  searchInput.value = '';
-  setPostUrl(post.id);
-  render({ preserveScroll: true });
-  requestAnimationFrame(() => scrollToSelectedPost());
+  selectPost(post.id);
 }
 
 function renderBookVideoShelf() {
@@ -1211,22 +1463,36 @@ function bookVideoCarouselControlButton(label, direction, count) {
 }
 
 function openBookVideoPost(post) {
-  state.category = '全部';
-  state.series = BOOK_VIDEO_SERIES;
-  state.lane = null;
-  state.query = '';
-  state.visible = PAGE_SIZE;
-  state.selectedId = post.id;
-  state.recommendationOpenId = null;
-  searchInput.value = '';
-  setPostUrl(post.id);
-  render({ preserveScroll: true });
-  requestAnimationFrame(() => scrollToSelectedPost());
+  selectPost(post.id);
+}
+
+function carouselPauseButton() {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'carousel-pause';
+  button.textContent = state.carouselPaused ? '播放輪播' : '暫停輪播';
+  setControlIcon(button, state.carouselPaused ? 'Play' : 'Pause', state.carouselPaused ? '播放輪播' : '暫停輪播');
+  button.setAttribute('aria-pressed', String(state.carouselPaused));
+  button.addEventListener('click', () => {
+    state.carouselPaused = !state.carouselPaused;
+    document.querySelectorAll('.carousel-pause').forEach((control) => {
+      setControlIcon(control, state.carouselPaused ? 'Play' : 'Pause', state.carouselPaused ? '播放輪播' : '暫停輪播');
+      control.setAttribute('aria-pressed', String(state.carouselPaused));
+    });
+  });
+  return button;
+}
+
+function canRotateCarousel() {
+  if (state.carouselPaused || state.selectedId || document.hidden || recommendationBand.matches(':hover') || recommendationBand.contains(document.activeElement)) return false;
+  const rect = recommendationBand.getBoundingClientRect();
+  return rect.bottom > 0 && rect.top < window.innerHeight;
 }
 
 function startFeaturedCarousel() {
   if (featuredCarouselTimer) return;
   featuredCarouselTimer = setInterval(() => {
+    if (!canRotateCarousel()) return;
     const count = fixedBookCarouselPosts().length;
     if (count < 2) return;
     state.featuredCarouselIndex = (state.featuredCarouselIndex + 1) % count;
@@ -1237,6 +1503,7 @@ function startFeaturedCarousel() {
 function startDailyBookPickCarousel() {
   if (dailyBookPickCarouselTimer) return;
   dailyBookPickCarouselTimer = setInterval(() => {
+    if (!canRotateCarousel()) return;
     const count = dailyBookPickCarouselPosts().length;
     if (count < 2) return;
     state.dailyBookPickCarouselIndex = (state.dailyBookPickCarouselIndex + 1) % count;
@@ -1508,16 +1775,7 @@ function hourlyRecommendationLabel() {
 }
 
 function openRecommendedPost(post) {
-  state.selectedId = post.id;
-  state.recommendationOpenId = post.id;
-  setPostUrl(post.id);
-  render({ preserveScroll: true, skipReaderAlign: true });
-  requestAnimationFrame(() => {
-    document.querySelector('.recommendation-reader')?.scrollIntoView({
-      behavior: 'smooth',
-      block: 'start'
-    });
-  });
+  selectPost(post.id);
 }
 
 function alignReaderWithSelectedPost(post) {
@@ -1576,6 +1834,10 @@ function readerSections(post) {
   const title = document.createElement('h2');
   title.textContent = displayTitle(post);
   header.append(meta, title, readerActions(post));
+  const readingTime = document.createElement('span');
+  readingTime.className = 'reading-time';
+  readingTime.textContent = `約 ${Math.max(1, Math.ceil(textLength(displayBody(post)) / 450))} 分鐘`;
+  meta.append(readingTime);
 
   const body = document.createElement('div');
   body.className = 'reader-body';
@@ -1586,7 +1848,7 @@ function readerSections(post) {
     paragraph.textContent = block;
     return paragraph;
   });
-  if (isImageOnlyPost(post)) {
+  if (isAdminMode && isImageOnlyPost(post)) {
     const label = document.createElement('p');
     label.className = 'image-story-label';
     label.textContent = 'Reels文案草稿';
@@ -1614,6 +1876,7 @@ function readerSections(post) {
   const media = renderMedia(post);
   if (media) sections.push(media);
   sections.push(body);
+  sections.push(readerNavigation(post));
   sections.push(renderBookstoreCta(post));
   if (isAdminMode && isImageOnlyPost(post)) sections.push(renderImageCaptionEditor(post));
   if ((post.tags || []).length) sections.push(tags);
@@ -1629,8 +1892,8 @@ function readerActions(post) {
   const homeButton = document.createElement('button');
   homeButton.type = 'button';
   homeButton.className = 'home-button';
-  homeButton.textContent = '回首頁';
-  homeButton.addEventListener('click', () => goHome());
+  homeButton.textContent = '返回列表';
+  homeButton.addEventListener('click', () => returnToList());
   actions.append(homeButton);
 
   const searchButton = document.createElement('button');
@@ -1638,7 +1901,6 @@ function readerActions(post) {
   searchButton.className = 'back-search-button';
   searchButton.textContent = '回到搜尋';
   searchButton.addEventListener('click', () => scrollToSearch());
-  actions.append(searchButton);
 
   actions.append(bookstoreCategoryLink(post, '找相關書'));
 
@@ -1654,6 +1916,35 @@ function readerActions(post) {
     }, 1400);
   });
   actions.append(copyLinkButton);
+  const fontControls = document.createElement('div');
+  fontControls.className = 'font-controls';
+  fontControls.setAttribute('role', 'group');
+  fontControls.setAttribute('aria-label', '閱讀字級');
+  let savedSize = '18';
+  try { savedSize = localStorage.getItem('bookstore.reader.fontSize') || '18'; } catch {}
+  if (!['16', '18', '21'].includes(savedSize)) savedSize = '18';
+  document.documentElement.style.setProperty('--reading-font-size', `${savedSize}px`);
+  [['16', '小'], ['18', '標準'], ['21', '大']].forEach(([size, label]) => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.textContent = label;
+    button.setAttribute('aria-label', `${label}字級`);
+    button.setAttribute('aria-pressed', String(savedSize === size));
+    button.addEventListener('click', () => {
+      document.documentElement.style.setProperty('--reading-font-size', `${size}px`);
+      try { localStorage.setItem('bookstore.reader.fontSize', size); } catch {}
+      fontControls.querySelectorAll('button').forEach((control) => control.setAttribute('aria-pressed', String(control === button)));
+    });
+    fontControls.append(button);
+  });
+  actions.append(fontControls);
+  const more = document.createElement('details');
+  more.className = 'reader-more';
+  const moreLabel = document.createElement('summary');
+  moreLabel.textContent = '更多';
+  const moreActions = document.createElement('div');
+  more.append(moreLabel, moreActions);
+  actions.append(more);
 
   const copyShareButton = document.createElement('button');
   copyShareButton.type = 'button';
@@ -1666,7 +1957,7 @@ function readerActions(post) {
       copyShareButton.textContent = '複製分享文';
     }, 1400);
   });
-  actions.append(copyShareButton);
+  moreActions.append(copyShareButton);
 
   if (isAdminMode) {
     const publishButton = document.createElement('button');
@@ -1692,14 +1983,14 @@ function readerActions(post) {
       copyButton.textContent = '複製文字';
     }, 1400);
   });
-  actions.append(copyButton);
+  moreActions.append(copyButton);
 
   if ((post.media || []).filter(isImage).length) {
     const imageButton = document.createElement('button');
     imageButton.type = 'button';
     imageButton.textContent = `下載圖片 ${formatCount(post.media.filter(isImage).length)}`;
     imageButton.addEventListener('click', () => downloadPostImages(post));
-    actions.append(imageButton);
+    moreActions.append(imageButton);
   }
 
   if (isAdminMode && (post.media || []).filter(isVideo).length) {
@@ -1794,15 +2085,14 @@ function statLine(label, value) {
 }
 
 function selectedPost(filtered) {
-  if (!filtered.length) {
-    state.selectedId = null;
-    return null;
-  }
-  const current = filtered.find((post) => post.id === state.selectedId);
-  if (current) return current;
-  if (isMobileLayout()) return null;
-  state.selectedId = filtered[0].id;
-  return filtered[0];
+  return state.selectedId ? postsById.get(state.selectedId) || null : null;
+}
+
+function postTeaser(post) {
+  let text = displayBody(post) || '';
+  const title = displayTitle(post);
+  if (text.trimStart().startsWith(title)) text = text.trimStart().slice(title.length);
+  return text.trim();
 }
 
 function initialPostId() {
@@ -1844,15 +2134,24 @@ function applyInitialSeriesFromLocation() {
 }
 
 function selectPost(id) {
+  if (!postsById.has(id)) return;
+  clearTimeout(searchTimer);
   if (state.selectedId === id) {
     setPostUrl(id);
     updateDocumentTitle(postsById.get(id));
+    scrollToSelectedPost();
     return;
   }
+  if (!state.selectedId) {
+    readingContext = { browse: browseSnapshot(), scrollY: window.scrollY, postId: id };
+    window.history.replaceState({ browse: browseSnapshot(), scrollY: window.scrollY }, '');
+  }
   state.selectedId = id;
+  state.view = 'articles';
   state.recommendationOpenId = null;
   setPostUrl(id);
-  render({ preserveScroll: true });
+  render();
+  scrollToSelectedPost();
 }
 
 function setPostUrl(id) {
@@ -1862,7 +2161,8 @@ function setPostUrl(id) {
     if (nextUrl.searchParams.get(POST_QUERY_PARAM) === id) return;
     nextUrl.searchParams.set(POST_QUERY_PARAM, id);
     nextUrl.searchParams.delete(SERIES_QUERY_PARAM);
-    window.history.pushState({ postId: id }, '', `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`);
+    nextUrl.hash = '';
+    window.history.pushState({ postId: id, browse: browseSnapshot(), returnContext: readingContext }, '', `${nextUrl.pathname}${nextUrl.search}`);
   } catch {
     // The article can still be read even when history updates are blocked.
   }
@@ -1877,7 +2177,8 @@ function setSeriesUrl(series) {
     } else {
       nextUrl.searchParams.set(SERIES_QUERY_PARAM, seriesUrlValue(series));
     }
-    window.history.pushState({ series }, '', `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`);
+    nextUrl.hash = '';
+    window.history.pushState({ series, browse: browseSnapshot() }, '', `${nextUrl.pathname}${nextUrl.search}`);
   } catch {
     // Filtering still works even when history updates are blocked.
   }
@@ -1949,10 +2250,10 @@ function updateDocumentTitle(post) {
 }
 
 function scrollToSelectedPost() {
-  const selectedCard = [...postList.querySelectorAll('.post-card')]
-    .find((node) => node.dataset.postId === state.selectedId);
-  const target = isMobileLayout() ? selectedCard : reader;
-  target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  requestAnimationFrame(() => {
+    reader.scrollIntoView({ behavior: 'instant', block: 'start' });
+    reader.focus({ preventScroll: true });
+  });
 }
 
 function scrollToSearch() {
@@ -1965,6 +2266,7 @@ function scrollToSearch() {
 }
 
 function goHome() {
+  clearTimeout(searchTimer);
   state.category = '全部';
   state.query = '';
   state.sort = 'newest';
@@ -1975,6 +2277,9 @@ function goHome() {
   state.selectedId = null;
   state.recommendationOpenId = null;
   state.lane = null;
+  state.scope = 'curated';
+  state.view = 'articles';
+  readingContext = null;
   searchInput.value = '';
   sortSelect.value = state.sort;
   clearShareUrl();
@@ -1984,18 +2289,13 @@ function goHome() {
 }
 
 function returnToTop() {
-  state.selectedId = null;
-  state.recommendationOpenId = null;
-  clearPostUrl();
-  resetReaderAlignment();
-  render({ skipReaderAlign: true });
-  requestAnimationFrame(() => scrollToTop());
+  goHome();
 }
 
 function scrollToResults() {
   requestAnimationFrame(() => {
     const target = document.querySelector('.result-head') || resultTitle || postList;
-    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    target.scrollIntoView({ behavior: scrollBehavior(), block: 'start' });
   });
 }
 
@@ -2117,6 +2417,8 @@ function isPublished(post) {
 }
 
 function togglePublished(post) {
+  renderedListKey = '';
+  renderedReaderId = null;
   const published = !isPublished(post);
   if (!published) {
     publishedIds.delete(post.id);
@@ -2202,6 +2504,8 @@ async function syncPublishedIds(ids) {
 }
 
 function setPublishedIds(ids) {
+  renderedListKey = '';
+  renderedReaderId = null;
   publishedIds.clear();
   for (const id of normalizePublishedIds(ids)) {
     publishedIds.add(id);
@@ -2221,6 +2525,9 @@ function sameIds(left, right) {
 }
 
 function saveImageCaption(post, title, body) {
+  renderedListKey = '';
+  renderedReaderId = null;
+  searchCache.delete(post.id);
   const caption = normalizeImageCaption({
     title,
     body,
@@ -2305,6 +2612,9 @@ async function syncImageCaptions(captions) {
 }
 
 function setImageCaptions(captions) {
+  renderedListKey = '';
+  renderedReaderId = null;
+  searchCache.clear();
   imageCaptions.clear();
   for (const [id, caption] of imageCaptionMap(captions)) {
     imageCaptions.set(id, caption);
@@ -2398,8 +2708,8 @@ function renderMedia(post) {
   const section = document.createElement('section');
   section.className = 'reader-media';
   const heading = document.createElement('h3');
-  heading.textContent = `附件 ${formatCount(allItems.length)}`;
   const imageItems = mediaItems.filter(isImage);
+  heading.textContent = youtubeItems.length ? '影音與圖文' : `圖文 ${formatCount(imageItems.length)}`;
   const nonImageItems = [...youtubeItems, ...mediaItems.filter((item) => !isImage(item))];
   const nodes = [];
 
@@ -2471,7 +2781,7 @@ function renderImageFigure(post, item, index) {
   });
   imageLink.append(image);
   const caption = document.createElement('figcaption');
-  caption.textContent = item.split('/').at(-1) || `附件 ${index + 1}`;
+  caption.textContent = `圖 ${index + 1}`;
   const link = document.createElement('a');
   link.href = assetUrl(item);
   link.download = mediaFileName(post, item, index);
@@ -2483,7 +2793,8 @@ function renderImageFigure(post, item, index) {
     event.preventDefault();
     openImageViewer(assetUrl(item), image.alt);
   });
-  figure.append(imageLink, caption, link, originalLink);
+  figure.append(imageLink, caption, originalLink);
+  if (isAdminMode) figure.append(link);
   return figure;
 }
 
@@ -2570,7 +2881,7 @@ function renderImageGallery(post, items) {
     image.src = url;
     image.alt = alt;
     counter.textContent = `${formatCount(activeIndex + 1)} / ${formatCount(items.length)}`;
-    caption.textContent = item.split('/').at(-1) || `附件 ${activeIndex + 1}`;
+    caption.textContent = '';
     downloadLink.href = url;
     downloadLink.download = mediaFileName(post, item, activeIndex);
     originalLink.href = url;
