@@ -24,8 +24,19 @@
     <link rel="canonical" href="https://blog.2books.com.tw/">
     <base href="/site/">
     <link rel="stylesheet" href="styles.css?v=20261005-book-search1">
+    <link rel="stylesheet" href="reading.css?v=20261109-reading1">
   </head>
   <body>
+    <a class="skip-link" href="#library">跳至文章</a>
+    <header class="site-nav">
+      <a class="nav-brand" href="/" data-home><img src="assets/favicon-32.png" alt=""><span>書店的修行</span></a>
+      <nav aria-label="主要導覽">
+        <a href="/" data-home>首頁</a>
+        <a href="#library" data-browse="articles">找文章</a>
+        <a href="#seriesDirectory" data-browse="series">讀系列</a>
+        <a href="https://www.2book.tw" target="_blank" rel="noopener noreferrer" class="nav-shop">逛書店 <span aria-hidden="true">↗</span></a>
+      </nav>
+    </header>
     <main class="shell">
       <section class="toolbar brand-toolbar" aria-label="文章篩選">
         <div class="brand-card">
@@ -38,20 +49,21 @@
             <h1>書店的修行</h1>
             <p class="brand-statement">臻品齋書店第45年，仍在舊書、經典與思想之間，每天讀書、整理，一步步為百萬本書找到位置。</p>
             <div class="brand-tags" aria-label="品牌定位">
-              <span>老闆說書</span>
-              <span>讀懂再買</span>
-              <span>找相關書</span>
               <a class="brand-about-link" href="/about.html">書店介紹</a>
               <a class="brand-follow-link" href="https://www.facebook.com/www.2books.com.tw/" target="_blank" rel="noopener noreferrer">追蹤老闆臉書</a>
             </div>
             <p id="summary">等待資料匯入</p>
           </div>
         </div>
-        <div class="search-row">
+        <div class="search-row" id="searchTools">
           <label class="search">
             <span>搜尋</span>
-            <input id="searchInput" type="search" placeholder="輸入關鍵字、分類或日期">
+            <input id="searchInput" type="search" placeholder="書名、作者、經典或關鍵字" autocomplete="off">
           </label>
+          <button type="button" id="searchSubmit" class="search-submit">搜尋文章</button>
+          <details class="filter-options">
+            <summary>進階篩選</summary>
+            <div class="filter-fields">
           <label class="select">
             <span>排序</span>
             <select id="sortSelect">
@@ -79,6 +91,8 @@
               <option value="已發佈">已發佈</option>
             </select>
           </label>
+            </div>
+          </details>
         </div>
       </section>
 
@@ -123,25 +137,34 @@
 
       <section id="recommendationBand" class="recommendation-band" aria-label="書店老闆每日選書"></section>
       <section id="readingGateway" class="reading-gateway" aria-label="閱讀入口"></section>
-      <nav id="categoryBar" class="categories" aria-label="分類"></nav>
-      <section id="bookVideoShelf" class="book-video-shelf" aria-label="書店翻書短影音"></section>
-
-      <section class="layout">
-        <aside class="stats" aria-label="統計"></aside>
-        <section class="results-panel" aria-label="文章列表">
-          <div class="result-head">
-            <div>
-              <h2 id="resultTitle">文章列表</h2>
-              <p id="resultMeta"></p>
+      <section id="library" class="library" aria-label="文章書架">
+        <div class="library-tabs" role="tablist" aria-label="瀏覽方式">
+          <button type="button" role="tab" id="tab-articles" aria-controls="articleBrowse" aria-selected="true" data-view="articles">最新說書</button>
+          <button type="button" role="tab" id="tab-series" aria-controls="seriesDirectory" aria-selected="false" data-view="series">系列目錄</button>
+          <button type="button" role="tab" id="tab-categories" aria-controls="categoryBar" aria-selected="false" data-view="categories">主題分類</button>
+          <button type="button" role="tab" id="tab-archive" aria-controls="articleBrowse" aria-selected="false" data-view="archive">全部文章</button>
+        </div>
+        <section id="seriesDirectory" role="tabpanel" aria-labelledby="tab-series" hidden></section>
+        <nav id="categoryBar" class="categories" role="tabpanel" aria-labelledby="tab-categories" aria-label="分類" hidden></nav>
+        <div id="articleBrowse" role="tabpanel" aria-labelledby="tab-articles">
+        <div id="activeFilters" class="active-filters" aria-live="polite"></div>
+        <section class="layout">
+          <aside class="stats" aria-label="系列"></aside>
+          <section class="results-panel" aria-label="文章列表">
+            <div class="result-head">
+              <div><h2 id="resultTitle" tabindex="-1">最新說書</h2><p id="resultMeta" role="status"></p></div>
+              <a id="topicPackLink" class="pack-link" href="../outputs/facebook_posts/tiktok/huang-yuanji/huang-yuanji-images.zip" download hidden>下載圖片包</a>
             </div>
-            <a id="topicPackLink" class="pack-link" href="../outputs/facebook_posts/tiktok/huang-yuanji/huang-yuanji-images.zip" download hidden>下載圖片包</a>
-          </div>
-          <section id="postList" class="post-list" aria-label="搜尋結果"></section>
-          <button id="loadMoreButton" class="load-more" type="button">顯示更多</button>
+            <section id="postList" class="post-list" aria-label="搜尋結果"><p class="loading-message" role="status">正在整理書架…</p></section>
+            <button id="loadMoreButton" class="load-more" type="button">顯示更多文章</button>
+          </section>
+          <article id="reader" class="reader" aria-label="文章內容" tabindex="-1" hidden></article>
         </section>
-        <article id="reader" class="reader" aria-label="文章內容"></article>
+        </div>
       </section>
+      <section id="bookVideoShelf" class="book-video-shelf" aria-label="書店翻書短影音"></section>
     </main>
+    <footer class="site-footer"><strong>臻品齋書店 · 書店的修行</strong><p>讀書，賣書；一面養活書店，一面安頓自己。</p><a href="/about.html">關於書店</a><a href="https://www.facebook.com/www.2books.com.tw/" target="_blank" rel="noopener noreferrer">追蹤老闆臉書</a><a href="https://www.2book.tw" target="_blank" rel="noopener noreferrer">前往書店</a></footer>
 
     <a class="bookstore-ad" href="https://www.2book.tw" target="_blank" rel="noopener noreferrer" aria-label="前往臻品齋書店官網 2book.tw">
       <img src="assets/2book-ad.webp" alt="">
@@ -151,7 +174,7 @@
       </span>
     </a>
     <button id="topButton" class="top-button" type="button">置頂</button>
-    <button id="mobileSearchButton" class="mobile-search-button" type="button" hidden>回到搜尋</button>
+    <button id="mobileSearchButton" class="mobile-search-button" type="button" hidden>返回列表</button>
 
     <template id="postTemplate">
       <article class="post-card">
@@ -167,6 +190,7 @@
 
   <script src="data/posts.js?v=20261106-facebook-increment1"></script>
     <script src="data/video-links.js?v=20260803-facebook-follow2"></script>
-    <script src="app.js?v=20261005-blog-domain1"></script>
+    <script src="reading-icons.js?v=20261109-reading1"></script>
+    <script src="app.js?v=20261109-reading1"></script>
   </body>
 </html>
